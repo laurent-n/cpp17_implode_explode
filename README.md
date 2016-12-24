@@ -1,10 +1,10 @@
-# c++ join/spli code snippet
+# c++ join/split code snippet
 Here are 3 codes snippet implementing string join and string split using C++ 11/14/17.
 
 To use it, just include `split_join.h` or copy paste the function you want, there's no external dependencies, you can even rename it as your convenience.
 
 You can also adapt it to work with basic_string only or force to return a vector.
-### string_implode
+### string_join
 Will join/merge/aggregate `string`/`string_view` with a separator and return the result into a `string`
 Exemple :
 ```
@@ -21,19 +21,19 @@ Works also with `wstring`
   wcout << L"string_join(Vectorw1,' ') => " << wres1 << endl;
 ```
 
-### string_explode
+### string_split
 Will split/tokenize a `string`/`string_view` in multiple `string`/`string_view` in a collection/container
 ```
   vector<string> Vector2;
   string_split(string("C++ 17 will be fun!"), string(" "), Vector2);
-  cout << "string_split  =>" << string_split(Vector2, "_") << endl;
+  cout << "string_split  =>" << string_join(Vector2, "_") << endl;
 ```
-Result : "C++_17_will_be_fun!"  `// I use string_implode to display easily`
+Result : "C++_17_will_be_fun!"  `// I use string_join to display easily`
   
 Another syntax using return, specify input string type and output a template parameter on call
 ```
   auto Vector3 = string_split<string, vector<string> >("C++ 17 will be fun! by return", " ");
-  cout << "string_split  =>" << string_split(Vector3, "_") << endl;
+  cout << "string_split  =>" << string_join(Vector3, "_") << endl;
 ```  
   Result : C++_17_will_be_fun!_by_return
 
