@@ -106,21 +106,21 @@ int main()
 {
     string17 str("C++ is fun");
     cout << str << endl;
-    vector<string> vector1=str.splits(" ");
+    vector<string> vector1=str.splits(" "); // string => vector<string>
     for(auto s:vector1)
         cout << s << endl;
 
 	string_view17 strsv("C++17 is fun with string_view");
 	cout << strsv << endl;
-	vector<string> vector2 = strsv.splits(" ");
+	vector<string> vector2 = strsv.splits(" "); // string_view => vector<string>
 	for (auto s : vector2)
 		cout << s << endl;
 
-	vector<string_view> vector3 = strsv.splitsv(" ");
+	vector<string_view> vector3 = strsv.splitsv(" "); // string_view => vector<string_view>
 	for (auto s : vector3)
 		cout << s << endl;
 
-	vector<string_view> vector4 = str.splitsv(" ");
+	vector<string_view> vector4 = str.splitsv(" "); // string => vector<string_view>
 	for (auto s : vector4)
 		cout << s << endl;
 
