@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+    <TITLE>A Proposal to Add split/join of string/string_view to the Standard Library</TITLE>
+    <META http-equiv=Content-Type content="text/html; charset=windows-1252">
+</HEAD>
+<BODY>
+    <p style="font-size:small ">
+        Laurent NAVARRO &lt;ln@altidev.com&gt; <BR>2016-12-28
+        <BR>Doc number  TBD
+        </FONT>
+
+        <H1>A Proposal to Add split/join of string/string_view to the Standard Library </H1>
+
+
+        <H2>I. Motivation</H2>
+
+    <p>
+        Split a string in multiple string based on a separator and the reverse operation to aggregate a collection of string with separator are quite common operations
+        , but there's no standardized easy to use solutions in the existing <code>std::basic_string</code> and the proposed <code>std::basic_string_view</code> class.
+    </p>
+    <p>The purpose of this simple proposal is to cover this miss.</p>
+    <p>
+        This feature is available in the standard string class of the following languages : D, Python, Java, C#, Go, Rust.
+    </p>
+
+
+    <H2>II. Impact On the Standard</H2>
+
+    <p>
+        This proposal is a pure library extension. It does not require changes in the language core itself.<br>
+        It does require adding new method on <code>std::basic_string</code> class (or not if implemented only in <code>std::basic_string_view</code>). <br>
+        Or just a function add in algorithms if this option is preferred.
+    </p>
+    <p>It has been implemented in standard C++.</p>
+
+
+    <H2>III. Design Decisions</H2>
+
+    <P>Several options have been discussed in this discussion <a href="#Ref1">[1]</a>, bellows a summary of the various discussed options</P>
+
+    <H3>Discussion on split</H3>
+    <H4>splits &amp; splitsv method</H4>
+    <p>
+        Probably the simplest option is to add method to <code>std::basic_string</code> and <code>std::basic_string_view</code>.<br>
+        Example on <code>std::basic_string_view</code> (<code>std::basic_string</code> is quite the same)
+        <pre><tt>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view&lt;CharT, Traits> &Separator) const
+vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const basic_string_view&lt;CharT, Traits> &Separator) const </pre></tt>
+        The purpose of theses method is to return a vector of string or of string_view.<br>
+        It's decided to hardcode the vector choice to have a call as simple possible.
+        <pre>auto MyResult= "my,csv,line"s.split(",");</pre>
+        <code>s</code> and <code>sv</code> suffixes are derived from the normalized literal suffixes.<br>
+        <code>splitsv</code> has the advantage to be efficient in terms of CPU (no copy to do) and RAM (No memory to allocate for substring, just for the vector).<br>
+        <code>splits</code> is useful if <code>splitsv</code> can't be used. For instance, it's needed if you try to split a temporary object.<br>
+        Move semantic is used to optimize the returned vector.<br>
+        Example of implementation in <a href="#Ref2">[2]</a> (could be optimized with an initial parsing to reserve the vector)
+    </p>
+
+    <H4>basic_string_view implementation only</H4>
+    <p>
+        Several options presented here are method in both <code>std::basic_string</code> and <code>std::basic_string_view</code>.
+        It could make sense to implement them only in <code>std::basic_string_view</code> for several reasons :
+        <ul>
+            <li>The implementation is similar for both</li>
+            <li>string can easily (and with a very small cost) be converted on string_view</li>
+            <li><code>basic_string_view</code> is a new class then it's probably simpler to amend it to integrate theses features in C++ 17. Could be back ported later on <code>std::basic_string</code> if needed.</li>
+        </ul>
+    </p>
+
+    <H4>splitf method</H4>
+    <p><code>splitf</code> method will split the input string and call an unary functor with a <code>std::basic_string_view</code> as a parameter</p>
+    <pre>template &lt;class F>
+void splitf(const basic_string_view<CharT, Traits> &Separator,F functor) const</pre>
+    <p>
+        Some person does not wish to have a container returned to avoid its memory allocation, <code>splitf</code> is one possible method to address this concern.<br>
+        Some person wishes to execute a processing on each value, <code>splitf</code> is a more direct way to address this request than iterate on <code>splitsv</code> result.<br>
+        The transmitted string view allows compute the position of the substring in the initial string, it was highlighted as a potential need.<br>
+        Example of usage displaying substring, initial position and length<pre>
+strsv.splitf(" ", [&](const string_view &s)
+	{ cout &lt;&lt; s &lt;&lt;"   ,Pos="&lt;&lt;(s.data() -strsv.data())&lt;&lt;" ,Len="&lt;&lt;s.length()<< endl; }
+);</pre>
+        Example of implementation in <a href="#Ref2">[2]</a> 
+    </p>
+
+    <H4>splitc method</H4>
+    <p><code>splitc</code> method will split the input string and push substring in the container passed as output parameter</p>
+    <pre>template &lt;class T>
+void splitc(const basic_string_view&lt;CharT, Traits> &Separator,T &Result) const</pre>
+    <p>
+        Some person does not wish to use a vector container, this option allows transmit a wide range of containers to address this concern.<br>
+        This option also allows feed a container with another string type in it. Can be done in this way if it can be built from a string_view.<br>        
+        Example of usage<pre>
+vector&lt;string_view> vector5;
+strsv.splitc(" ", vector5); 
+vector&lt;string> vector6;
+strsv.splitc(" ", vector6);     </pre>
+        Example of implementation in <a href="#Ref2">[2]</a> 
+    </p>
+
+
+    <H4>string_split function</H4>
+    <p>
+        <code>string_split</code> function algorithm will return a range and can potentially replace all the previously discussed method<br>
+        Example of usage<pre>
+string MyStr("my,csv,line")
+vector&lt;string>  MyResult(split(MyStr, ","));
+// Efficient conversion from string to string_view may require an explicit initial casting
+vector&lt;string_view> MyResult(split(string_view(MyStr), ","));
+// splitf replacement
+std::for_each(split(string_view(MyStr), ","), callback);    </pre>
+It could also be used with alternate string class, however it will probably require they have a standardized way to extract substring by having a substr method 
+        (it's not case of qstring, Cstring, AnsiString ) making this argument less valuable<br>
+It looks at a smart option, however, some cons on it :<br>
+* Not prototyped to check feasibility and usability<br>
+* Some notation may be heavier than with methods options<br>
+* Create a global name function which could have a collision with existing code.
+    </p>
+    
+    <H3>Discussion on join</H3>
+
+
+    <H4>join static method</H4>
+    <p><code>join</code> static method will join a list of input string transmitted on a iterable container and add a delimiter between each value</p>
+    <pre>template&lt;class T,class U>
+static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator)</pre>
+    <p>
+        Could also be <code>string_join</code> function algorithm.<br>
+
+    Example of usage (simple but so usefull)<pre>
+cout << "Join of string vector=" << string::join(vector6, "_") << endl;
+cout << "Join of string_view vector=" << string::join(vector5, "_") << endl;    </pre>
+        Example of implementation in <a href="#Ref2">[2]</a> (could be optimized with an initial iteration to reserve the string)
+</p>
+
+
+    <H4>join method</H4>
+    <p><code>join</code> method will use the current string as a separator to join the list, it's the way of usage of join in Python</p>
+    <pre>template&lt;class T>
+	basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList)</pre>
+    <p>
+        Example of usage <pre>
+cout << "pythonic Join of string =" << "-"s.join(vector6) << endl;
+    </pre>
+This option could also be part of <code>std::basic_string_view</code> class, the static option make less sense.
+<br>Example of implementation in <a href="#Ref2">[2]</a> 
+    </p>
+
+
+            <H2>IV. Proposed Text</H2>
+    <p>TBD when a consensus on better options will be reached. </p>
+            
+
+            <H2>VI References</H2>
+
+            <ul>
+                <li>
+                    <a name="Ref1">
+                        [1] Discussion on Google Groups
+                        <a href="https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko">https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko</a>
+                    </a>
+                </li>
+                <li><a name="Ref2">
+    [2] Example of implementation on GitHub</a>
+    <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_2/testcpp17_2.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_2/testcpp17_2.cpp</a>
+</li>
+            </ul>
+</BODY>
+</HTML>
