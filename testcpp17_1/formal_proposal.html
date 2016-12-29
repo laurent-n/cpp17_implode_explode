@@ -8,7 +8,7 @@
     <p style="font-size:small ">
         Laurent NAVARRO &lt;ln@altidev.com&gt; <BR>2016-12-28
         <BR>Doc number  TBD
-        </FONT>
+        </p>
 
         <H1>A Proposal to Add split/join of string/string_view to the Standard Library </H1>
 
@@ -44,8 +44,8 @@
     <p>
         Probably the simplest option is to add method to <code>std::basic_string</code> and <code>std::basic_string_view</code>.<br>
         Example on <code>std::basic_string_view</code> (<code>std::basic_string</code> is quite the same)
-        <pre><tt>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view&lt;CharT, Traits> &Separator) const
-vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const basic_string_view&lt;CharT, Traits> &Separator) const </pre></tt>
+        <pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view&lt;CharT, Traits> &Separator) const
+vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const basic_string_view&lt;CharT, Traits> &Separator) const </pre>
         The purpose of theses method is to return a vector of string or of string_view.<br>
         It's decided to hardcode the vector choice to have a call as simple possible.
         <pre>auto MyResult= "my,csv,line"s.split(",");</pre>
@@ -115,6 +115,35 @@ It looks at a smart option, however, some cons on it :<br>
 * Some notation may be heavier than with methods options<br>
 * Create a global name function which could have a collision with existing code.
     </p>
+
+
+    <H4>split by single char</H4>
+    <p>It was highlighted that split by a single char can be optimized regarding splitting by a string. Then it was suggested an overload for single char Separator.<br>
+    On the other hand this optimization can be detected at runtime or by a non-standardized overload.<br>
+    However the find method as standardized this kind of overload.</p>
+    <p>
+        Perhaps the best option is to let the separator as generic type as it allows use specialized version of <code>find</code> and let implementors overload it they want to optimize it.<br>
+        On the other hand, specify it as part of the standard is an incitation to optimize it and is perhaps good too as it's probably the most common case.
+    </p>
+    <p> So debate it's not yet closed <br>
+        Example of implementation in <a href="#Ref2">[2]</a>         
+    </p>
+
+
+    <H4>split by regexp</H4>
+    <p>
+        It was highlighted that split by a regexp can be useful, it can also be a way to implement the split by a set of separators, then an overload of <code>split</code> with <code>regexp</code> could make sense.
+</p><p>
+    If selected option for split is function it may be an overload of this function located on the regexp header.<br>
+    Or it can be a similar but different function named regexp_split to be consistent with other regex algorithms (regex_match, regex_search, regex_replace)
+</p><p>
+    If selected option for split is methods, it may introduce a dependency on regexp which is perhaps not a good idea.<br>
+    But it could be implemented by a regexp_split function. <br>
+    Perhaps it's not an issue to have a dependency with another standard class in this case overload on function may make sense.
+</p><p>
+    So debate it's not yet closed and depends on the conclusion of the selected option between string::split methods and range string_split function<br>        
+    </p>
+
     
     <H3>Discussion on join</H3>
 
@@ -124,14 +153,12 @@ It looks at a smart option, however, some cons on it :<br>
     <pre>template&lt;class T,class U>
 static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator)</pre>
     <p>
-        Could also be <code>string_join</code> function algorithm.<br>
 
-    Example of usage (simple but so usefull)<pre>
+    Example of usage (simple but so useful)<pre>
 cout << "Join of string vector=" << string::join(vector6, "_") << endl;
 cout << "Join of string_view vector=" << string::join(vector5, "_") << endl;    </pre>
-        Example of implementation in <a href="#Ref2">[2]</a> (could be optimized with an initial iteration to reserve the string)
+        Example of implementation in <a href="#Ref2">[2]</a> 
 </p>
-
 
     <H4>join method</H4>
     <p><code>join</code> method will use the current string as a separator to join the list, it's the way of usage of join in Python</p>
@@ -145,21 +172,58 @@ This option could also be part of <code>std::basic_string_view</code> class, the
 <br>Example of implementation in <a href="#Ref2">[2]</a> 
     </p>
 
+    <H4>string_join function</H4>
+    <p><code>string_join</code> function act exactly as static function but is more adequate if <code>string_split</code> function is the selected option for split.</p>
+    <pre>template&lt;class T,class U>
+basic_string&lt;typename T::value_type::value_type, typename T::value_type::traits_type> string_join(T &InputStringList, U Separator)</pre>
+    <p> Example of usage (simple but so useful)<pre>
+cout << "Join of string_view vector with string_join=" << string_join(vector5, "_") << endl;</pre>
+        Example of implementation in <a href="#Ref2">[2]</a> 
+    </p>
 
-            <H2>IV. Proposed Text</H2>
+    <H4>Processing optimization</H4>
+    <p>It's possible to optimize the processing by iterating on the container a first time to compute the size of the final string and reserve it below an example on </p>
+    <pre>template&lt;class T>
+basic_string&lt;typename T::value_type::value_type, typename T::value_type::traits_type> 
+  string_join(const T &InputStringList
+            , const basic_string_view&lt;typename T::value_type::value_type,typename T::value_type::traits_type> Separator)
+{
+	basic_string&lt;T::value_type::value_type, T::value_type::traits_type> result_string;
+	size_t StrLen = 0;	
+	if (InputStringList.empty())
+		return result_string;
+	auto it = InputStringList.begin();
+	for (; it != InputStringList.end(); ++it)
+		StrLen += it->size() + Separator.size();
+	result_string.reserve(StrLen);
+	result_string += *InputStringList.begin();
+	for (it = ++InputStringList.begin(); it != InputStringList.end(); ++it)
+	{
+		result_string += Separator;
+		result_string += *it;
+	}
+	return result_string;
+}</pre>
+    <p>
+        However it implies to be able to obtain the length of each string in both InputStringList and Separator. 
+        We can consider it's quite common that the separator will be a <code>char*</code> but it doesn't have <code>size()</code> member, so as a workaround the separator is specified as <code>const string_view</code>.<br>
+        The problem is the same if <code>InputStringList</code> is a <code>vector&lt;char*></code>, but in this case the problem is bigger as it seems to me impossible to specify the type of the returned string.
+    </p>
+
+
+    <H2>IV. Proposed Text</H2>
     <p>TBD when a consensus on better options will be reached. </p>
             
 
-            <H2>VI References</H2>
+    <H2>VI References</H2>
 
-            <ul>
-                <li>
-                    <a name="Ref1">
-                        [1] Discussion on Google Groups
-                        <a href="https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko">https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko</a>
-                    </a>
+    <ul>
+    <li>
+    <a name="Ref1">
+                        [1] Discussion on Google Groups</a>
+    <a href="https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko">https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko</a>                    
                 </li>
-                <li><a name="Ref2">
+    <li><a name="Ref2">
     [2] Example of implementation on GitHub</a>
     <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testcpp17_1.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testcpp17_1.cpp</a>
 </li>
