@@ -201,6 +201,14 @@ Code (1) will not work because <code>split_string</code> use a reference to the 
           Methods solution : works fine
         </td>
       </tr>
+      <tr>
+        <td>From alternate string class (Must be convertible with string_view)</td>
+        <td>vec=string_split(MyOtherString,",");</td>
+        <td>vec=string_view(MyOtherString).split(",");</td>
+        <td>
+          both options use in fact the string_view implementation. string_split is not instanciated for the alternate string class.
+        </td>
+      </tr>
     </table>
     </p>
 
