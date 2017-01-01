@@ -110,10 +110,98 @@ vector&lt;string_view> MyResult(split(string_view(MyStr), ","));
 std::for_each(split(string_view(MyStr), ","), callback);    </pre>
 It could also be used with alternate string class, however it will probably require they have a standardized way to extract substring by having a substr method 
         (it's not case of qstring, Cstring, AnsiString ) making this argument less valuable<br>
+Example of implementation in <a href="#Ref3">[3]&[4]</a><br>
 It looks at a smart option, however, some cons on it :<br>
-* Not prototyped to check feasibility and usability<br>
+* Temporary object issues (see below)<br>
 * Some notation may be heavier than with methods options<br>
 * Create a global name function which could have a collision with existing code.
+    </p>
+    <p><a name="TempObject"><span style="text-decoration: underline;">The Temporary object issue</span></a><br>
+        During the evaluation of prototype it was clearly appears there's a problem with temporary objects.<br>
+<pre>string string_toLower(string Str)
+{
+    std::transform(Str.begin(), Str.end(), Str.begin(), ::tolower);
+    return Str;
+}
+int main()
+{
+  for(auto x : split_string(vstr1,regex("\\s")))      <== (1)
+    . . . . .
+  for(auto x : split_string(string_toLower("C++ Is Very Fun!!!")," "))    <== (2)
+    . . . . .
+}    </pre>
+Code (1) will not work because <code>split_string</code> use a reference to the <code>regex</code> but has this one doesn't exist anymore when
+    <code>split_string</code> returns, the returned iterator got a problem because the regex object doesn't exist anymore.<br>
+    It can easily be fixed by copying the regex in the iterator, but it's not cost free. Problem is potentially the same with the string separator but has it should be a literal it should be OK in most times.
+    </p>
+    <p> Code (2) will not work either and it's a bigger problem. It's for the same reason, when we use the returned iterator, the lowered string doesn't exist anymore.
+      But systematically make a copy of the inputString doesn't make sense from a memory and a performance perspective.
+      It will also invalidate returned string_view in several other usage as the returned string view will not be on the initial object but on the saved copy.
+    </p><p>
+    <span style="text-decoration: underline;">Solutions Comparison</span><br>
+      Since the first answer in the proposal thread on google groups, there's a debate between methods vs function. Bellow a factual comparison on some use case.
+<style>
+#table1 td:nth-child(2),#table1 td:nth-child(3) {font-family: Menlo, Monaco, Consolas, "Courier New", monospace;font-size: small;min-width: 300px;}
+</style>
+    <table border="1" id="table1">
+      <tr>
+        <th>Usage</th>
+        <th>Function Option</th>
+        <th>Method Option</th>
+        <th>Remarks</th>
+      </tr>
+      <tr>
+        <td>Split in vector of string_view</td>
+        <td>vector&lt;string_view> vec =string_split(str,",");</td>
+        <td>auto vec=str.splitsv(",");</td>
+        <td>Function solution allocate 1 extra split_range_string and 3 extra iterators (first_,past_last_,the internal of for) </td>
+      </tr>
+      <tr>
+        <td>Split in vector of string</td>
+        <td>vector&lt;string> vec=string_split(str,",");</td>
+        <td>auto vec=str.splits(",");</td>
+        <td>Function solution allocate 1 extra split_range_string and 3 extra iterators (first_,past_last_,the internal of for) +creation of intermediate string_view </td>
+      </tr>
+      <tr>
+        <td>Split in list of string_view</td>
+        <td>list&lt;string_view> lst =string_split(str,",");</td>
+        <td>list&lt;string_view> lst;<br>
+          str.splitc(",",lst);</td>
+        <td>Function solution use the same notation for every container.<br>
+          Method solution requires a different coding for other containers but is more efficient as it doesn't require extra object creation.
+        </td>
+      </tr>
+      <tr>
+        <td>Split over a function</td>
+        <td>for_each(string_split(str,","),MyFunction);</td>
+        <td>str.splitf(",",MyFunction);</td>
+        <td>Function solution allocate extra objects </td>
+      </tr>
+      <tr>
+        <td>Split over a loop (a)</td>
+        <td>for(s :string_split(str,","))</td>
+        <td>for(s :str.splitsv(","))</td>
+        <td>Methods solution allocate an extra vector of string_view  </td>
+      </tr>
+      <tr>
+        <td>Split over a loop (b)</td>
+        <td>for(s :string_split(str,","))</td>
+        <td>	strsv.splitf(" ", [&](const string_view &s)	{<br>
+		cout &lt;&lt; s &lt;&lt; endl; <br>
+	});
+</td>
+        <td>Methods solution doesn't allocate the extra vector and no extra object like function solution but the notation is quite less conventional </td>
+      </tr>
+      <tr>
+        <td>Temporary object</td>
+        <td>vec=string_split(GetTmpObject(),",");</td>
+        <td>vec=GetTmpObject().split(",");</td>
+        <td>
+          Function solution : Doesn't work (see § Temporary object issue)<br>
+          Methods solution : works fine
+        </td>
+      </tr>
+    </table>
     </p>
 
 
@@ -144,7 +232,16 @@ It looks at a smart option, however, some cons on it :<br>
     So debate it's not yet closed and depends on the conclusion of the selected option between string::split methods and range string_split function<br>        
     </p>
 
-    
+
+    <H4>split by splitter object</H4>
+    <p>
+    It N3593 Proposal <a href="#Ref5">[5]</a> there's the idea of using a template delimiter object which must implement a find method.<br>
+    The proposal suggests providing 4 built-in classes for char,string,any_of_string,regex.<br>
+    It's a smart idea as it allows reduce the number of overload and provide the possibility to extend the concept.<br>
+    However I think that the benefit provided by reduction of overload is lost by the introduction of 4 new classes. And the wish to add a new kind of splitter is reduced.<br>
+    Then I consider this solution is a bit more complex for a reduced benefit.
+    <p>
+
     <H3>Discussion on join</H3>
 
 
@@ -211,6 +308,15 @@ basic_string&lt;typename T::value_type::value_type, typename T::value_type::trai
     </p>
 
 
+    <H4>Parameter order</H4>
+    <p>In several function like string_join it was highlighted the  order could be with the separator first as it's smaller than the container (or the input string).</p>
+    <p> In some language the standard implementation is with the separator first :  PHP , C#, Java<br>
+In some others, it's separator last Go, Rust, boost::algorithm::join, LibC strtok<br>
+        Python has a different logic as the separator is the "caller" object (like join classic method described earlier)<br>
+        Having the separator as 2nd parameters would allow have it optional with "" <br>
+        It has to be analyzed later, but the consensus seems to be for the separator last.
+    </p>
+
     <H2>IV. Proposed Text</H2>
     <p>TBD when a consensus on better options will be reached. </p>
             
@@ -224,9 +330,26 @@ basic_string&lt;typename T::value_type::value_type, typename T::value_type::trai
     <a href="https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko">https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko</a>                    
                 </li>
     <li><a name="Ref2">
-    [2] Example of implementation on GitHub</a>
-    <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testcpp17_1.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testcpp17_1.cpp</a>
-</li>
-            </ul>
+      [2] Example of implementation on GitHub with GCC 6.2 MingW</a>
+      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp</a>
+    </li>
+    <li><a name="Ref3">
+      [3a] Implementation prototype done for N3593 Proposal</a>
+      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/StringSplit.h">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/StringSplit.h</a>
+    </li>
+    <li>
+      [3b] Test code of implementation prototype done for N3593 Proposal
+      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/TestStringSplit.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/TestStringSplit.cpp</a>
+    </li>
+    <li><a name="Ref4">
+      [4] Example of implementation by range initiated by Nicol and amended by Laurent on GitHub</a>
+      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/RangeSplitTest.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/RangeSplitTest.cpp</a>
+    </li>
+    <li><a name="Ref5">
+      [5] N3593 Proposal</a>
+      <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html</a>
+    </li>
+
+  </ul>
 </BODY>
 </HTML>
