@@ -98,7 +98,53 @@ strsv.splitc(" ", vector6);     </pre>
     </p>
 
 
-    <H4>string_split function</H4>
+    <H4>Special values</H4>
+    <p>If the separator is an empty string "" or the separator char is 0 then split methods will split on every char.<br>
+    If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+    </p>
+
+
+
+    <H4>split by single char</H4>
+    <p>It was highlighted that split by a single char can be optimized regarding splitting by a string. Then it was suggested an overload for single char Separator.<br>
+    On the other hand this optimization can be detected at runtime or by a non-standardized overload.<br>
+    However the find method as standardized this kind of overload.</p>
+    <p>
+        Perhaps the best option is to let the separator as generic type as it allows use specialized version of <code>find</code> and let implementors overload it they want to optimize it.<br>
+        On the other hand, specify it as part of the standard is an incitation to optimize it and is perhaps good too as it's probably the most common case.
+    </p>
+    <p> So debate it's not yet closed <br>
+        Example of implementation in <a href="#Ref2">[2]</a>
+    </p>
+
+
+    <H4>split by regexp</H4>
+    <p>
+        It was highlighted that split by a regexp can be useful, it can also be a way to implement the split by a set of separators, then an overload of <code>split</code> with <code>regexp</code> could make sense.
+</p><p>
+    If selected option for split is function it may be an overload of this function located on the regexp header.<br>
+    Or it can be a similar but different function named regexp_split to be consistent with other regex algorithms (regex_match, regex_search, regex_replace)
+</p><p>
+    If selected option for split is methods, it may introduce a dependency on regexp which is perhaps not a good idea.<br>
+    But it could be implemented by a regexp_split function. <br>
+    Perhaps it's not an issue to have a dependency with another standard class in this case overload on function may make sense.
+</p><p>
+    So debate it's not yet closed and depends on the conclusion of the selected option between string::split methods and range string_split function<br>
+    </p>
+
+
+    <H4>Alternate option : split by splitter object</H4>
+    <p>
+    It N3593 Proposal <a href="#Ref5">[5]</a> there's the idea of using a template delimiter object which must implement a find method.<br>
+    The proposal suggests providing 4 built-in classes for char,string,any_of_string,regex.<br>
+    It's a smart idea as it allows reduce the number of overload and provide the possibility to extend the concept.<br>
+    However I think that the benefit provided by reduction of overload is lost by the introduction of 4 new classes. And the wish to add a new kind of splitter is reduced.<br>
+    Then I consider this solution is a bit more complex for a reduced benefit.
+    <p>
+
+
+
+    <H4>Alternate option : string_split function</H4>
     <p>
         <code>string_split</code> function algorithm will return a range and can potentially replace all the previously discussed method<br>
         Example of usage<pre>
@@ -137,6 +183,13 @@ Code (1) will not work because <code>split_string</code> use a reference to the 
     <p> Code (2) will not work either and it's a bigger problem. It's for the same reason, when we use the returned iterator, the lowered string doesn't exist anymore.
       But systematically make a copy of the inputString doesn't make sense from a memory and a performance perspective.
       It will also invalidate returned string_view in several other usage as the returned string view will not be on the initial object but on the saved copy.
+    </p><p>
+      A complementary test done using split action of range-v3 library seems to confirm this fact :
+<pre>vector<string>vect1= string_toLower(str8) | view::split(',');</pre>
+    This instruction display this assertion :<br>
+<pre>error: static assertion failed: You can't pipe an rvalue container into a view. First, save the container into a named variable, and then pipe it to the view.</pre>
+    Which let think that, by design, range cannot handle temporary values.
+
     </p><p>
     <span style="text-decoration: underline;">Solutions Comparison</span><br>
       Since the first answer in the proposal thread on google groups, there's a debate between methods vs function. Bellow a factual comparison on some use case.
@@ -211,45 +264,6 @@ Code (1) will not work because <code>split_string</code> use a reference to the 
       </tr>
     </table>
     </p>
-
-
-    <H4>split by single char</H4>
-    <p>It was highlighted that split by a single char can be optimized regarding splitting by a string. Then it was suggested an overload for single char Separator.<br>
-    On the other hand this optimization can be detected at runtime or by a non-standardized overload.<br>
-    However the find method as standardized this kind of overload.</p>
-    <p>
-        Perhaps the best option is to let the separator as generic type as it allows use specialized version of <code>find</code> and let implementors overload it they want to optimize it.<br>
-        On the other hand, specify it as part of the standard is an incitation to optimize it and is perhaps good too as it's probably the most common case.
-    </p>
-    <p> So debate it's not yet closed <br>
-        Example of implementation in <a href="#Ref2">[2]</a>         
-    </p>
-
-
-    <H4>split by regexp</H4>
-    <p>
-        It was highlighted that split by a regexp can be useful, it can also be a way to implement the split by a set of separators, then an overload of <code>split</code> with <code>regexp</code> could make sense.
-</p><p>
-    If selected option for split is function it may be an overload of this function located on the regexp header.<br>
-    Or it can be a similar but different function named regexp_split to be consistent with other regex algorithms (regex_match, regex_search, regex_replace)
-</p><p>
-    If selected option for split is methods, it may introduce a dependency on regexp which is perhaps not a good idea.<br>
-    But it could be implemented by a regexp_split function. <br>
-    Perhaps it's not an issue to have a dependency with another standard class in this case overload on function may make sense.
-</p><p>
-    So debate it's not yet closed and depends on the conclusion of the selected option between string::split methods and range string_split function<br>        
-    </p>
-
-
-    <H4>split by splitter object</H4>
-    <p>
-    It N3593 Proposal <a href="#Ref5">[5]</a> there's the idea of using a template delimiter object which must implement a find method.<br>
-    The proposal suggests providing 4 built-in classes for char,string,any_of_string,regex.<br>
-    It's a smart idea as it allows reduce the number of overload and provide the possibility to extend the concept.<br>
-    However I think that the benefit provided by reduction of overload is lost by the introduction of 4 new classes. And the wish to add a new kind of splitter is reduced.<br>
-    Then I consider this solution is a bit more complex for a reduced benefit.
-    <p>
-
     <H3>Discussion on join</H3>
 
 
@@ -326,8 +340,135 @@ In some others, it's separator last Go, Rust, boost::algorithm::join, LibC strto
     </p>
 
     <H2>IV. Proposed Text</H2>
-    <p>TBD when a consensus on better options will be reached. </p>
-            
+    <H4>Addition to string_view header</H4>
+    <H5>add in class basic_string_view</H5>
+<pre>
+	vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
+	vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
+	vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
+	vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
+	vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
+	vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const
+	template &lt;class F>
+	void splitf(const basic_string_view &Separator,F functor) const
+	template &lt;class F>
+	void splitf(const typename basic_string_view::value_type Separator,F functor) const
+	template &lt;class F>
+	void splitf(const basic_regex&lt;CharT> &Separator,F functor) const
+
+	template &lt;class T>
+	void splitc(const basic_string_view &Separator,T &Result) const
+	template &lt;class T>
+	void splitc(const typename basic_string_view::value_type Separator,T &Result) const
+	template &lt;class T>
+	void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const  
+</pre>
+
+<h5>splits method and overloads</h5>
+<pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
+vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
+vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const  </pre>
+    <p>
+      <b>Effects: </b>split a string based on the separator and return the result in a vector of string<br>
+      The separator can be :<br>
+      * a string<br>
+      * a single char<br>
+      * regexp<br>
+      <b>Returns:</b> vector&lt;string> <br>
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
+      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+    </p>
+
+<h5>splitsv method and overloads</h5>
+<pre>vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
+vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
+vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const  </pre>
+    <p>
+      <b>Effects: </b>split a string based on the separator and return the result in a vector of string_view<br>
+      The separator can be :<br>
+      * a string<br>
+      * a single char<br>
+      * regexp<br>
+      <b>Returns:</b> vector&lt;string_view> <br>
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
+      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+    </p>
+
+
+<h5>splitf method and overloads</h5>
+<pre>template &lt;class F>
+void splitf(const basic_string_view &Separator,F functor) const
+template &lt;class F>
+void splitf(const typename basic_string_view::value_type Separator,F functor) const
+template &lt;class F>
+void splitf(const basic_regex&lt;CharT> &Separator,F functor) const  </pre>
+    <p>
+      <b>Effects: </b>split a string based on the separator and  call a unary function for each occurence<br>
+      The separator can be :<br>
+      * a string<br>
+      * a single char<br>
+      * regexp<br>
+      <b>Returns:</b> void <br>
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
+      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+    </p>
+
+
+<h5>splitc method and overloads</h5>
+<pre>	template &lt;class T>
+void splitc(const basic_string_view &Separator,T &Result) const
+template &lt;class T>
+void splitc(const typename basic_string_view::value_type Separator,T &Result) const
+template &lt;class T>
+void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const  </pre>
+    <p>
+      <b>Effects: </b>split a string based on the separator and  return the result in container passed as output parameter<br>
+      The separator can be :<br>
+      * a string<br>
+      * a single char<br>
+      * regexp<br>
+      <b>Returns:</b> void <br>
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
+      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+    </p>
+
+    <H4>Addition to string header</H4>
+    <H5>add in class basic_string</H5>
+<pre>
+vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
+vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
+vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
+vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
+vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
+vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const
+template &lt;class F>
+void splitf(const basic_string_view &Separator,F functor) const
+template &lt;class F>
+void splitf(const typename basic_string_view::value_type Separator,F functor) const
+template &lt;class F>
+void splitf(const basic_regex&lt;CharT> &Separator,F functor) const
+template &lt;class T>
+void splitc(const basic_string_view &Separator,T &Result) const
+template &lt;class T>
+void splitc(const typename basic_string_view::value_type Separator,T &Result) const
+template &lt;class T>
+void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const
+
+template&lt;class T,class U>
+static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator)</pre>
+<h5>splits,splitsv,splitf,splitc method and overloads</h5>
+    <p>
+      Exactly the same behavior as their basic_string_view equivalent it's a shortcut.
+    </p>
+<h5>join static method</h5>
+<pre>template&lt;class T,class U>
+static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator)</pre>
+    <p>
+      <b>Effects: </b>return a string which join all string contained in the InputStringList. Add a separator between each string. If there's N string there's N-1 separator inserted.<br>
+
+      <b>Returns:</b> aggreagated string <br>
+      <b>Remarks:</b> if InputStringList is empty method will return an empty string.
+    </p>
 
     <H2>VI References</H2>
 
@@ -338,24 +479,25 @@ In some others, it's separator last Go, Rust, boost::algorithm::join, LibC strto
     <a href="https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko">https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko</a>                    
                 </li>
     <li><a name="Ref2">
-      [2] Example of implementation on GitHub with GCC 6.2 MingW</a>
-      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp</a>
+      [2] Example of implementation on GitHub with  VC17 (testes also with GCC 6.2 MingW, some minor change required)</a>
+      <br>Test : <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp</a>
+      <br>Lib : <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/string17.h">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/string17.h</a>
     </li>
     <li><a name="Ref3">
       [3a] Implementation prototype done for N3593 Proposal</a>
-      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/StringSplit.h">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/StringSplit.h</a>
+      <br><a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/StringSplit.h">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/StringSplit.h</a>
     </li>
     <li>
       [3b] Test code of implementation prototype done for N3593 Proposal
-      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/TestStringSplit.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/TestStringSplit.cpp</a>
+      <br><a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/TestStringSplit.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/TestStringSplit.cpp</a>
     </li>
     <li><a name="Ref4">
       [4] Example of implementation by range initiated by Nicol and amended by Laurent on GitHub</a>
-      <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/RangeSplitTest.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/RangeSplitTest.cpp</a>
+      <br><a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/RangeSplitTest.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_3/RangeSplitTest.cpp</a>
     </li>
     <li><a name="Ref5">
       [5] N3593 Proposal</a>
-      <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html</a>
+      <br><a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html</a>
     </li>
 
   </ul>
