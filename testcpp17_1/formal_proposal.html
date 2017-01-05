@@ -6,7 +6,7 @@
 </HEAD>
 <BODY>
     <p style="font-size:small ">
-        Laurent NAVARRO &lt;ln@altidev.com&gt; <BR>2016-12-28
+        Laurent NAVARRO &lt;ln@altidev.com&gt; <BR>2017-01-05
         <BR>Doc number  TBD
         </p>
 
@@ -282,7 +282,7 @@ cout << "Join of string_view vector=" << string::join(vector5, "_") << endl;    
     <H4>join method</H4>
     <p><code>join</code> method will use the current string as a separator to join the list, it's the way of usage of join in Python</p>
     <pre>template&lt;class T>
-	basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList)</pre>
+basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList)</pre>
     <p>
         Example of usage <pre>
 cout << "pythonic Join of string =" << "-"s.join(vector6) << endl;
@@ -339,29 +339,33 @@ In some others, it's separator last Go, Rust, boost::algorithm::join, LibC strto
         It has to be analyzed later, but the consensus seems to be for the separator last.
     </p>
 
-    <H2>IV. Proposed Text</H2>
-    <H4>Addition to string_view header</H4>
-    <H5>add in class basic_string_view</H5>
-<pre>
-	vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
-	vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
-	vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
-	vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
-	vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
-	vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const
-	template &lt;class F>
-	void splitf(const basic_string_view &Separator,F functor) const
-	template &lt;class F>
-	void splitf(const typename basic_string_view::value_type Separator,F functor) const
-	template &lt;class F>
-	void splitf(const basic_regex&lt;CharT> &Separator,F functor) const
 
-	template &lt;class T>
-	void splitc(const basic_string_view &Separator,T &Result) const
-	template &lt;class T>
-	void splitc(const typename basic_string_view::value_type Separator,T &Result) const
-	template &lt;class T>
-	void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const  
+
+
+    <H2>IV. Proposed Text</H2>
+    <H4>Addition to &lt;string_view> header</H4>
+    <H5>add in class basic_string_view</H5>
+<pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
+vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
+vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
+
+vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
+vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
+vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const
+
+template &lt;class F>
+void splitf(const basic_string_view &Separator,F functor) const
+template &lt;class F>
+void splitf(const typename basic_string_view::value_type Separator,F functor) const
+template &lt;class F>
+void splitf(const basic_regex&lt;CharT> &Separator,F functor) const
+
+template &lt;class T>
+void splitc(const basic_string_view &Separator,T &Result) const
+template &lt;class T>
+void splitc(const typename basic_string_view::value_type Separator,T &Result) const
+template &lt;class T>
+void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const
 </pre>
 
 <h5>splits method and overloads</h5>
@@ -375,8 +379,8 @@ vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &S
       * a single char<br>
       * regexp<br>
       <b>Returns:</b> vector&lt;string> <br>
-      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
-      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 then the string will be split on every char<br>
+      If the input string is an empty string "" then split methods return an empty container or never call the callback function.
     </p>
 
 <h5>splitsv method and overloads</h5>
@@ -390,8 +394,8 @@ vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) con
       * a single char<br>
       * regexp<br>
       <b>Returns:</b> vector&lt;string_view> <br>
-      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
-      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 then the string will be split on every char<br>
+      If the input string is an empty string "" then split methods return an empty container or never call the callback function.
     </p>
 
 
@@ -409,33 +413,32 @@ void splitf(const basic_regex&lt;CharT> &Separator,F functor) const  </pre>
       * a single char<br>
       * regexp<br>
       <b>Returns:</b> void <br>
-      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
-      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 then the string will be split on every char<br>
+      If the input string is an empty string "" then split methods return an empty container or never call the callback function.
     </p>
 
 
 <h5>splitc method and overloads</h5>
-<pre>	template &lt;class T>
+<pre>template &lt;class T>
 void splitc(const basic_string_view &Separator,T &Result) const
 template &lt;class T>
 void splitc(const typename basic_string_view::value_type Separator,T &Result) const
 template &lt;class T>
 void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const  </pre>
     <p>
-      <b>Effects: </b>split a string based on the separator and  return the result in container passed as output parameter<br>
+      <b>Effects: </b>split a string based on the separator and  return the result in the container passed as output parameter<br>
       The separator can be :<br>
       * a string<br>
       * a single char<br>
       * regexp<br>
       <b>Returns:</b> void <br>
-      <b>Remarks:</b> if string is empty (size()==0) or single char==0 string will be splitted on every char<br>
-      If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
+      <b>Remarks:</b> if string is empty (size()==0) or single char==0 then the string will be split on every char<br>
+      If the input string is an empty string "" then split methods return an empty container or never call the callback function.
     </p>
 
-    <H4>Addition to string header</H4>
+    <H4>Addition to &lt;string> header</H4>
     <H5>add in class basic_string</H5>
-<pre>
-vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
+<pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
 vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
 vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
 vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
@@ -456,7 +459,7 @@ void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const
 
 template&lt;class T,class U>
 static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator)</pre>
-<h5>splits,splitsv,splitf,splitc method and overloads</h5>
+<h5>splits,splitsv,splitf,splitc methods and overloads</h5>
     <p>
       Exactly the same behavior as their basic_string_view equivalent it's a shortcut.
     </p>
@@ -466,8 +469,8 @@ static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Sepa
     <p>
       <b>Effects: </b>return a string which join all string contained in the InputStringList. Add a separator between each string. If there's N string there's N-1 separator inserted.<br>
 
-      <b>Returns:</b> aggreagated string <br>
-      <b>Remarks:</b> if InputStringList is empty method will return an empty string.
+      <b>Returns:</b> Aggregated string <br>
+      <b>Remarks:</b> if InputStringList is empty method returns an empty string.
     </p>
 
     <H2>VI References</H2>
