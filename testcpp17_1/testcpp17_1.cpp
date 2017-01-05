@@ -1,310 +1,25 @@
 #include <iostream>
-#include <vector>
-#include <string>
-#include <string_view>
-
+#include "string17.h"
 
 using namespace std;
 
-
-template<
-    class CharT,
-    class Traits = std::char_traits<CharT>,
-    class Allocator = std::allocator<CharT>
->
-class basic_string17:public basic_string<CharT,Traits,Allocator>
+// Used to test on temporary string
+string string_toLower(string Str)
 {
-public:
-    using basic_string<CharT,Traits,Allocator>::basic_string;
-
-	
-    vector<basic_string<CharT,Traits,Allocator> > splits(const basic_string<CharT,Traits,Allocator> Separator) const
-    {
-        vector<basic_string<CharT,Traits,Allocator> > Result;
-        typename basic_string<CharT,Traits,Allocator>::size_type p, start = 0;
-        while (1)
-        {
-            p = basic_string<CharT,Traits,Allocator>::find(Separator, start);
-            if (p == basic_string<CharT,Traits,Allocator>::npos)
-            {
-                Result.emplace_back(basic_string<CharT,Traits,Allocator>::substr(start, basic_string<CharT,Traits,Allocator>::npos));
-                return Result;
-            }
-            else
-            {
-                Result.emplace_back(basic_string<CharT,Traits,Allocator>::substr(start, p - start));
-                start = p + Separator.length();
-            }
-        }
-    }
-	// Overload with separator as simple char to allow optimization.
-	vector<basic_string<CharT, Traits, Allocator> > splits(const typename basic_string<CharT, Traits, Allocator>::value_type Separator) const
-	{
-		vector<basic_string<CharT, Traits, Allocator> > Result;
-		typename basic_string<CharT, Traits, Allocator>::size_type p=0, start = 0;
-		while (1)
-		{
-			if(data()[p]== Separator)
-			{
-				Result.emplace_back(basic_string<CharT, Traits, Allocator>::substr(start, p - start));
-				++p;
-				start = p;
-			}
-			else if (data()[p] == 0)
-			{
-				Result.emplace_back(basic_string<CharT, Traits, Allocator>::substr(start, basic_string<CharT, Traits, Allocator>::npos));
-				return Result;
-			}
-			else
-			{
-				++p;
-			}
-		}
-	}
-
-
-	vector<basic_string_view<CharT, Traits> > splitsv(const basic_string_view<CharT, Traits> &Separator) const
-	{
-		basic_string_view17<CharT, Traits> tmp(this->data(), this->length()); // Should work with tmp(*this)
-		return tmp.splitsv(Separator);
-	}
-
-	vector<basic_string_view<CharT, Traits> > splitsv(const typename basic_string<CharT, Traits, Allocator>::value_type Separator) const
-	{
-		basic_string_view17<CharT, Traits> tmp(this->data(), this->length()); // Should work with tmp(*this)
-		return tmp.splitsv(Separator);
-	}
-
-	template<class T,class U>
-	static basic_string<CharT, Traits, Allocator> join(T &InputStringList, U Separator)
-	{
-		basic_string<CharT, Traits, Allocator> result_string;
-		for (auto it = InputStringList.begin(); it != InputStringList.end(); it++)
-		{
-			if (it != InputStringList.begin())
-				result_string += Separator;
-			result_string += *it;
-
-		}
-		return result_string;
-	}
-	template<class T>
-	basic_string<CharT, Traits, Allocator> join(T &InputStringList)
-	{
-		basic_string<CharT, Traits, Allocator> result_string;
-		for (auto it = InputStringList.begin(); it != InputStringList.end(); it++)
-		{
-			if (it != InputStringList.begin())
-				result_string += *this;
-			result_string += *it;
-
-		}
-		return result_string;
-	}
-
-
-};
-typedef basic_string17<char> string17;
-
-/*
-template<class T,class U>
-basic_string<typename T::value_type::value_type, typename T::value_type::traits_type> string_join(T &InputStringList, U Separator)
-{
-	basic_string<T::value_type::value_type, T::value_type::traits_type> result_string;
-	for (auto it = InputStringList.begin(); it != InputStringList.end(); it++)
-	{
-	if (it != InputStringList.begin())
-	result_string += Separator;
-	result_string += *it;
-
-	}
-	return result_string;
-}
-*/
-template<class T>
-basic_string<typename T::value_type::value_type, typename T::value_type::traits_type> string_join(const T &InputStringList, const basic_string_view<typename T::value_type::value_type,typename T::value_type::traits_type> Separator)
-{
-	basic_string<T::value_type::value_type, T::value_type::traits_type> result_string;
-	size_t StrLen = 0;	
-	if (InputStringList.empty())
-		return result_string;
-	auto it = InputStringList.begin();
-	for (; it != InputStringList.end(); ++it)
-		StrLen += it->size() + Separator.size();
-	result_string.reserve(StrLen);
-	result_string += *InputStringList.begin();
-	for (it = ++InputStringList.begin(); it != InputStringList.end(); ++it)
-	{
-		result_string += Separator;
-		result_string += *it;
-	}
-	return result_string;
+    std::transform(Str.begin(), Str.end(), Str.begin(), ::tolower);
+    return Str;
 }
 
-// doesn't works with char*
-/*template<class T, class U>
-auto string_join2(T &InputStringList, U Separator)
-{	
-	if (InputStringList.empty())
-		return T::value_type();
-	auto result_string = *InputStringList.begin();
-	for (auto it = ++InputStringList.begin(); it != InputStringList.end(); it++)
-	{
-		result_string += Separator;
-		result_string += *it;
-	}
-	return result_string;
-}
-*/
 
-
-template<
-	class CharT,
-	class Traits = std::char_traits<CharT>
->
-class basic_string_view17 :public basic_string_view<CharT, Traits>
+void VerbosingTest()
 {
-public:
-	using basic_string_view<CharT, Traits>::basic_string_view;
-
-	vector<basic_string<CharT, Traits> > splits(const basic_string_view<CharT, Traits> &Separator) const
-	{
-		vector<basic_string<CharT, Traits> > Result;
-		typename basic_string_view<CharT, Traits>::size_type p, start = 0;
-		while (1)
-		{
-			p = basic_string_view<CharT, Traits>::find(Separator, start);
-			if (p == basic_string_view<CharT, Traits>::npos)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start));
-				return Result;
-			}
-			else
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, p - start));
-				start = p + Separator.length();
-			}
-		}
-	}
-	// Overload with separator as simple char to allow optimization.
-	vector<basic_string<CharT, Traits> > splits(const typename basic_string_view<CharT, Traits>::value_type Separator) const
-	{
-		vector<basic_string<CharT, Traits> >  Result;
-		typename basic_string_view<CharT, Traits>::size_type p = 0, start = 0;
-		while (1)
-		{
-			if (data()[p] == Separator)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, p - start));
-				++p;
-				start = p;
-			}
-			else if (data()[p] == 0)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start));
-				return Result;
-			}
-			else
-			{
-				++p;
-			}
-		}
-	}
-	vector<basic_string_view<CharT, Traits> > splitsv(const basic_string_view<CharT, Traits> &Separator) const
-	{
-		vector<basic_string_view<CharT, Traits> > Result;
-		typename basic_string_view<CharT, Traits>::size_type p, start = 0;
-		while (1)
-		{
-			p = basic_string_view<CharT, Traits>::find(Separator, start);
-			if (p == basic_string_view<CharT, Traits>::npos)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, basic_string_view<CharT, Traits>::npos));
-				return Result;
-			}
-			else
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, p - start));
-				start = p + Separator.length();
-			}
-		}
-	}
-	// Overload with separator as simple char to allow optimization.
-	vector<basic_string_view<CharT, Traits> > splitsv(const typename basic_string_view<CharT, Traits>::value_type Separator) const
-	{
-		vector<basic_string_view<CharT, Traits> >  Result;
-		typename basic_string_view<CharT, Traits>::size_type p = 0, start = 0;
-		while (1)
-		{
-			if (data()[p] == Separator)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, p - start));
-				++p;
-				start = p;
-			}
-			else if (data()[p] == 0)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start));
-				return Result;
-			}
-			else
-			{
-				++p;
-			}
-		}
-	}
-	template <class F>
-	void splitf(const basic_string_view<CharT, Traits> &Separator,F functor) const
-	{
-		typename basic_string_view<CharT, Traits>::size_type p, start = 0;
-		while (1)
-		{
-			p = basic_string_view<CharT, Traits>::find(Separator, start);
-			if (p == basic_string_view<CharT, Traits>::npos)
-			{
-				functor(basic_string_view<CharT, Traits>::substr(start, basic_string_view<CharT, Traits>::npos));
-				return ;
-			}
-			else
-			{
-				functor(basic_string_view<CharT, Traits>::substr(start, p - start));
-				start = p + Separator.length();
-			}
-		}
-
-	}
-	template <class T>
-	void splitc(const basic_string_view<CharT, Traits> &Separator,T &Result) const
-	{		
-		typename basic_string_view<CharT, Traits>::size_type p, start = 0;
-		Result.clear();
-		while (1)
-		{
-			p = basic_string_view<CharT, Traits>::find(Separator, start);
-			if (p == basic_string_view<CharT, Traits>::npos)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, basic_string_view<CharT, Traits>::npos));
-				return ;
-			}
-			else
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, p - start));
-				start = p + Separator.length();
-			}
-		}
-	}
-
-};
-typedef basic_string_view17<char> string_view17;
-
-
-int main()
-{
-    string17 str("C++ is fun");
+string17 str("C++ is fun");
     cout << str << endl;
-    vector<string> vector1=str.splits(" "); // string => vector<string>
-    for(auto s:vector1)
+    //vector<string> vector1=str.splits(" "); // string => vector<string>
+    auto vector1=str.splits(" "); // string => vector<string>
+    for(auto s:vector1) {
         cout << s << endl;
+    }
 
 	vector1 = str.splits(' '); // string => vector<string> with char separator
 	for (auto s : vector1)
@@ -343,7 +58,7 @@ int main()
 	vector<string_view> vector5;
 	strsv.splitc(" ", vector5); // splitc in vector<string_view>
 	for (auto s : vector5)
-		cout << s << endl; 
+		cout << s << endl;
 	vector<string> vector6;
 	strsv.splitc(" ", vector6); // splitc in vector<string>
 	for (auto s : vector6)
@@ -357,7 +72,274 @@ int main()
 	// doesn't works with char*
 	//vector<char*> vector7{ "C++","is","fun","even with char*" };
 	//cout << "Join of char* vector =" << string_join2(vector7, "_") << endl;
+	cout << "---- test split on regex -----" << endl;
+	regex r1("\\s");
+	strsv.splitf(r1, [&](const string_view &s)
+	{
+		cout << s <<"   ,Pos="<<(s.data() -strsv.data())<<" ,Len="<<s.length()<< endl;
+	}); // string_view => functor
+	cout <<"splits (regex)="<<string_join( strsv.splits(r1),"_")<<endl;
+	cout <<"splitsv(regex)="<<string_join( strsv.splitsv(r1),"-")<<endl;
 
+}
+
+// TESTS from N3593 prototype
+using Vec_sv = std::vector<string_view>;
+
+template <typename T, typename U>
+static void expect_equal(T const& lhs, U const& rhs, char const* strlhs, char const* strrhs, int line)
+{
+    if (lhs == rhs)
+        return;
+    std::cout << "line(" << line << ") assertion failed: " << strlhs << " == " << strrhs << "\n";
+    std::cout << "  actual values: " << lhs << " and " << rhs << "\n";
+}
+
+template <typename T, typename U>
+static void expect_not_equal(T const& lhs, U const& rhs, char const* strlhs, char const* strrhs, int line)
+{
+    if (lhs != rhs)
+        return;
+    std::cout << "line(" << line << ") assertion failed: " << strlhs << " != " << strrhs << "\n";
+    std::cout << "  actual values: " << lhs << " and " << rhs << "\n";
+}
+
+#define EXPECT_EQUAL(X, Y) expect_equal(X, Y, #X, #Y, __LINE__)
+#define EXPECT_NOT_EQUAL(X, Y) expect_not_equal(X, Y, #X, #Y, __LINE__)
+
+
+static void test_EmptyStrings()
+{
+    {
+        auto vec = Vec_sv(string_view17().splitsv(","));
+        EXPECT_EQUAL(vec.size(), 0U);
+        //EXPECT_EQUAL(vec[0], "");
+    }
+    {
+        auto vec = Vec_sv(string_view17("").splitsv(","));
+        EXPECT_EQUAL(vec.size(), 0U);
+        //EXPECT_EQUAL(vec[0], "");
+    }
+    {
+        auto vec = Vec_sv(string_view17().splitsv(','));
+        EXPECT_EQUAL(vec.size(), 0U);
+        //EXPECT_EQUAL(vec[0], "");
+    }
+    {
+        auto vec = Vec_sv(string_view17().splitsv(regex("\\s")));
+        EXPECT_EQUAL(vec.size(), 0U);
+        //EXPECT_EQUAL(vec[0], "");
+    }
+}
+
+static void test_LeadingDelimiters()
+{
+    {
+        auto vec = string_view17(",").splits(',');
+        EXPECT_EQUAL(2u, vec.size());
+        EXPECT_EQUAL("", vec[0]);
+        EXPECT_EQUAL("", vec[1]);
+    }
+    {
+        auto vec = Vec_sv(string_view17(", ").splitsv( ','));
+        EXPECT_EQUAL(2u, vec.size());
+        EXPECT_EQUAL("", vec[0]);
+        EXPECT_EQUAL(" ", vec[1]);
+    }
+}
+
+static void test_SimpleLiteralTests()
+{
+    {
+        auto vec = Vec_sv(string_view17("a").splitsv( ","));
+        EXPECT_EQUAL(1u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+    }
+    {
+        auto vec = Vec_sv(string_view17("a,").splitsv( ","));
+        EXPECT_EQUAL(2u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("", vec[1]);
+    }
+    {
+        auto vec = Vec_sv(string_view17("a,b").splitsv(regex(",")));
+        EXPECT_EQUAL(2u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("b", vec[1]);
+    }
+    {
+        auto vec = Vec_sv(string_view17("a,").splitsv(regex(",")));
+        EXPECT_EQUAL(2u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("", vec[1]);
+    }
+    {
+        auto vec = Vec_sv(string_view17("a,b").splitsv( ","));
+        EXPECT_EQUAL(2u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("b", vec[1]);
+    }
+    {
+        auto vec = Vec_sv(string_view17("-a-b-c----d").splitsv( "-"));
+        EXPECT_EQUAL(8u, vec.size());
+        EXPECT_EQUAL("", vec[0]);
+        EXPECT_EQUAL("a", vec[1]);
+        EXPECT_EQUAL("b", vec[2]);
+        EXPECT_EQUAL("c", vec[3]);
+        EXPECT_EQUAL("", vec[4]);
+        EXPECT_EQUAL("", vec[5]);
+        EXPECT_EQUAL("", vec[6]);
+        EXPECT_EQUAL("d", vec[7]);
+    }
+    {
+        auto vec = Vec_sv(string_view17("-a-b-c----d").splitsv( "--"));
+
+        EXPECT_EQUAL(3u, vec.size());
+        EXPECT_EQUAL("-a-b-c", vec[0]);
+        EXPECT_EQUAL("", vec[1]);
+        EXPECT_EQUAL("d", vec[2]);
+    }
+}
+
+
+static void test_AnyOfDelimiter()
+{
+    {
+        auto vec = Vec_sv(string_view17("a.b-c,. d, e .f-").splitsv(regex("[.,-]")));
+        EXPECT_EQUAL(8u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("b", vec[1]);
+        EXPECT_EQUAL("c", vec[2]);
+        EXPECT_EQUAL("", vec[3]);
+        EXPECT_EQUAL(" d", vec[4]);
+        EXPECT_EQUAL(" e ", vec[5]);
+        EXPECT_EQUAL("f", vec[6]);
+        EXPECT_EQUAL("", vec[7]);
+    }
+    { // with temporary object
+		string s("ss");
+//        auto vec= string_view17(string_toLower( "A.b-C,. d, e .f-")).splits(regex("[\\.,\\-]"));
+		auto vec = string_view17(string_toLower("A.b-C,. d, e .f-").c_str()).splits(regex("[\\.,\\-]"));
+        EXPECT_EQUAL(8u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("b", vec[1]);
+        EXPECT_EQUAL("c", vec[2]);
+        EXPECT_EQUAL("", vec[3]);
+        EXPECT_EQUAL(" d", vec[4]);
+        EXPECT_EQUAL(" e ", vec[5]);
+        EXPECT_EQUAL("f", vec[6]);
+        EXPECT_EQUAL("", vec[7]);
+    }
+    {  // With multisize regex added + after []
+        auto vec = Vec_sv(string_view17("a.b-c,. d, e .f-").splitsv(regex("[.,-]+")));
+        EXPECT_EQUAL(7u, vec.size());
+        EXPECT_EQUAL("a", vec[0]);
+        EXPECT_EQUAL("b", vec[1]);
+        EXPECT_EQUAL("c", vec[2]);
+        EXPECT_EQUAL(" d", vec[3]);
+        EXPECT_EQUAL(" e ", vec[4]);
+        EXPECT_EQUAL("f", vec[5]);
+        EXPECT_EQUAL("", vec[6]);
+    }
+
+}
+
+
+static void test_EmptyDelimiters()
+{
+    {
+        auto vec = Vec_sv(string_view17().splitsv(""));
+        EXPECT_EQUAL(vec.size(), 0U);
+    }
+    {
+        auto vec = Vec_sv(string_view17().splitsv('\0'));
+        EXPECT_EQUAL(vec.size(), 0U);
+    }
+    {
+        auto vec = Vec_sv(string_view17("").splitsv( ""));
+        EXPECT_EQUAL(vec.size(), 0U);
+    }
+    {
+        auto vec = Vec_sv(string_view17("").splitsv('\0'));
+        EXPECT_EQUAL(vec.size(), 0U);
+    }
+    {
+        auto vec = Vec_sv(string_view17("x").splitsv( ""));
+        EXPECT_EQUAL(vec.size(), 1U);
+        EXPECT_EQUAL(vec[0], "x");
+    }
+    {
+        auto vec = Vec_sv(string_view17("x").splitsv('\0'));
+        EXPECT_EQUAL(vec.size(), 1U);
+        EXPECT_EQUAL(vec[0], "x");
+    }
+    {
+        auto vec = Vec_sv(string_view17("abc").splitsv(""));
+        EXPECT_EQUAL(vec.size(), 3U);
+        EXPECT_EQUAL(vec[0], "a");
+        EXPECT_EQUAL(vec[1], "b");
+        EXPECT_EQUAL(vec[2], "c");
+    }
+    {
+        auto vec = Vec_sv(string_view17("abc").splitsv('\0'));
+        EXPECT_EQUAL(vec.size(), 3U);
+        EXPECT_EQUAL(vec[0], "a");
+        EXPECT_EQUAL(vec[1], "b");
+        EXPECT_EQUAL(vec[2], "c");
+    }
+    {
+        Vec_sv vec ;
+        string_view17("abc").splitf("",[&](auto const &s) {vec.push_back(s);});
+        EXPECT_EQUAL(vec.size(), 3U);
+        EXPECT_EQUAL(vec[0], "a");
+        EXPECT_EQUAL(vec[1], "b");
+        EXPECT_EQUAL(vec[2], "c");
+    }
+    {
+        Vec_sv vec ;
+        string_view17("a,b,c").splitf(",",[&](auto const &s) {vec.push_back(s);});
+        EXPECT_EQUAL(vec.size(), 3U);
+        EXPECT_EQUAL(vec[0], "a");
+        EXPECT_EQUAL(vec[1], "b");
+        EXPECT_EQUAL(vec[2], "c");
+    }
+{
+        Vec_sv vec ;
+        string_view17("a,,,,c").splitf(",,",[&](auto const &s) {vec.push_back(s);});
+        EXPECT_EQUAL(vec.size(), 3U);
+        EXPECT_EQUAL(vec[0], "a");
+        EXPECT_EQUAL(vec[1], "");
+        EXPECT_EQUAL(vec[2], "c");
+    }
+
+}
+
+void test_Join()
+{
+    Vec_sv vsv{"C++","is","fun"};
+    string res;
+    res=string17::join(vsv,"-");
+    EXPECT_EQUAL(res, "C++-is-fun");
+    //Pyhton Style
+    //res="."s.join(vsv); // Will work when it will be in the standard
+    res=string17(".").join(vsv);
+    EXPECT_EQUAL(res, "C++.is.fun");
+
+    vector<const char*> vchar{"C++","is","fun"};
+    res=string17::join(vsv,"*");
+    EXPECT_EQUAL(res, "C++*is*fun");
+
+}
+
+int main()
+{
+    test_EmptyStrings();
+    test_LeadingDelimiters();
+    test_SimpleLiteralTests();
+    test_AnyOfDelimiter();
+    test_EmptyDelimiters();
+    test_Join();
+//    VerbosingTest();
     cout << "---- End of tests ----" << endl;
 
     return 0;
