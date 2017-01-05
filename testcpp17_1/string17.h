@@ -1,13 +1,18 @@
 #include <vector>
 #include <string>
 #include <regex>
+#ifdef __GNUC__
+#include <experimental/string_view>
+
+template<class CharT, class Traits>
+using basic_string_view = std::experimental::basic_string_view<CharT, Traits>;
+using string_view = std::experimental::string_view;
+#else
+
 #include <string_view>
-
-/*template<class CharT, class Traits>
-using basic_string_view = std::basic_string_view<CharT, Traits>;
-
-using string_view = std::string_view;*/
 using std::basic_string_view;
+#endif // __GNUC__
+
 using std::basic_string;
 using std::vector;
 using std::basic_regex;

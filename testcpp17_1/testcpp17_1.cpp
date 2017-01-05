@@ -3,6 +3,15 @@
 
 using namespace std;
 
+#ifdef __GNUC__
+// Required on GCC only as it's not fully implemented
+template<class CharT,class Traits>
+void operator +=(basic_string<CharT,Traits> &lhs,const basic_string_view<CharT,Traits> &rhs)
+{
+    lhs.append(rhs.begin(),rhs.end());
+}
+#endif // __GNUC__
+
 // Used to test on temporary string
 string string_toLower(string Str)
 {
@@ -217,9 +226,11 @@ static void test_AnyOfDelimiter()
         EXPECT_EQUAL("", vec[7]);
     }
     { // with temporary object
-		string s("ss");
-//        auto vec= string_view17(string_toLower( "A.b-C,. d, e .f-")).splits(regex("[\\.,\\-]"));
+#ifdef __GNUC__
+        auto vec= string_view17(string_toLower( "A.b-C,. d, e .f-")).splits(regex("[\\.,\\-]"));
+#else // Issue to do that on VC17
 		auto vec = string_view17(string_toLower("A.b-C,. d, e .f-").c_str()).splits(regex("[\\.,\\-]"));
+#endif // __GNUC__
         EXPECT_EQUAL(8u, vec.size());
         EXPECT_EQUAL("a", vec[0]);
         EXPECT_EQUAL("b", vec[1]);
