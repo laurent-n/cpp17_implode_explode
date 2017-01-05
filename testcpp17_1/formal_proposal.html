@@ -107,13 +107,14 @@ strsv.splitc(" ", vector6);     </pre>
 
     <H4>split by single char</H4>
     <p>It was highlighted that split by a single char can be optimized regarding splitting by a string. Then it was suggested an overload for single char Separator.<br>
-    On the other hand this optimization can be detected at runtime or by a non-standardized overload.<br>
-    However the find method as standardized this kind of overload.</p>
+    On the other hand this optimization can (and should) be detected at runtime or by a non-standardized overload added by the implentor.<br>
+    for information the <code>string::find</code> method as standardized the char overload too.</p>
     <p>
-        Perhaps the best option is to let the separator as generic type as it allows use specialized version of <code>find</code> and let implementors overload it they want to optimize it.<br>
-        On the other hand, specify it as part of the standard is an incitation to optimize it and is perhaps good too as it's probably the most common case.
+      It was decided to add the char overload as it also avoid the creation of the temporary string_view object.<br>
+      The implementors can decide to forward it to the string_view version if it don't want to optimize this case.<br>
+      Specify it as part of the standard is an incitation to optimize this case as it's probably the most common case.
     </p>
-    <p> So debate it's not yet closed <br>
+    <p>
         Example of implementation in <a href="#Ref2">[2]</a>
     </p>
 
@@ -122,15 +123,12 @@ strsv.splitc(" ", vector6);     </pre>
     <p>
         It was highlighted that split by a regexp can be useful, it can also be a way to implement the split by a set of separators, then an overload of <code>split</code> with <code>regexp</code> could make sense.
 </p><p>
-    If selected option for split is function it may be an overload of this function located on the regexp header.<br>
-    Or it can be a similar but different function named regexp_split to be consistent with other regex algorithms (regex_match, regex_search, regex_replace)
-</p><p>
-    If selected option for split is methods, it may introduce a dependency on regexp which is perhaps not a good idea.<br>
+    It may introduce a dependency on regexp which is perhaps not a good idea.<br>
     But it could be implemented by a regexp_split function. <br>
-    Perhaps it's not an issue to have a dependency with another standard class in this case overload on function may make sense.
-</p><p>
-    So debate it's not yet closed and depends on the conclusion of the selected option between string::split methods and range string_split function<br>
-    </p>
+    Perhaps it's not an issue to have a dependency with another standard class in this case overload on function may make sense.<br>
+      This option is part of the proposed text.
+</p>
+<p>       Example of implementation in <a href="#Ref2">[2]</a>    </p>
 
 
     <H4>Alternate option : split by splitter object</H4>
