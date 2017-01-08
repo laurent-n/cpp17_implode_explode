@@ -3,11 +3,15 @@
 <HEAD>
     <TITLE>A Proposal to Add split/join of string/string_view to the Standard Library</TITLE>
     <META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<style>
+.modified {background-color: #f2ff6c}
+.modified::after { content: "  [Modified/added recently]"; font-size: small;}
+</style>
 </HEAD>
 <BODY>
     <p style="font-size:small ">
-        Laurent NAVARRO &lt;ln@altidev.com&gt; <BR>2017-01-05
-        <BR>Doc number  TBD
+        Laurent NAVARRO &lt;ln@altidev.com&gt; <BR>2017-01-07
+        <BR>Doc number  Dxxx TBD
         </p>
 
         <H1>A Proposal to Add split/join of string/string_view to the Standard Library </H1>
@@ -19,6 +23,10 @@
         Split a string in multiple string based on a separator and the reverse operation to aggregate a collection of string with separator are quite common operations
         , but there's no standardized easy to use solutions in the existing <code>std::basic_string</code> and the proposed <code>std::basic_string_view</code> class.
     </p>
+    <pre>
+      split("C++/is/fun","/") => ["C++","is","fun"]
+      join(["C++","is","fun"],"/") => "C++/is/fun"      </pre>
+
     <p>The purpose of this simple proposal is to cover this miss.</p>
     <p>
         This feature is available in the standard string class of the following languages : D, Python, Java, C#, Go, Rust.
@@ -73,17 +81,17 @@ vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const basic_string_view&
 void splitf(const basic_string_view<CharT, Traits> &Separator,F functor) const</pre>
     <p>
         Some person does not wish to have a container returned to avoid its memory allocation, <code>splitf</code> is one possible method to address this concern.<br>
-        Some person wishes to execute a processing on each value, <code>splitf</code> is a more direct way to address this request than iterate on <code>splitsv</code> result.<br>
+        Some person wishes to execute a processing on each value, <code>splitf</code> is a more direct way to address this request than iterate on <code>splitsv</code> result with for_each.<br>
         The transmitted string view allows compute the position of the substring in the initial string, it was highlighted as a potential need.<br>
         Example of usage displaying substring, initial position and length<pre>
-strsv.splitf(" ", [&](const string_view &s)
-	{ cout &lt;&lt; s &lt;&lt;"   ,Pos="&lt;&lt;(s.data() -strsv.data())&lt;&lt;" ,Len="&lt;&lt;s.length()<< endl; }
-);</pre>
+strsv.splitf(" ", [&](const string_view &s) {
+ cout &lt;&lt; s &lt;&lt;"   ,Pos="&lt;&lt;(s.data() -strsv.data())&lt;&lt;" ,Len="&lt;&lt;s.length()&lt;&lt; endl;
+});</pre>
         Example of implementation in <a href="#Ref2">[2]</a> 
     </p>
 
     <H4>splitc method</H4>
-    <p><code>splitc</code> method will split the input string and push substring in the container passed as output parameter</p>
+    <p><code>splitc</code> method will split the input string and push substring in the container passed as output parameter.</p>
     <pre>template &lt;class T>
 void splitc(const basic_string_view&lt;CharT, Traits> &Separator,T &Result) const</pre>
     <p>
@@ -98,8 +106,30 @@ strsv.splitc(" ", vector6);     </pre>
     </p>
 
 
+
+    <H4 class="modified">Unify name for split methods</H4>
+    <p>Instead of using suffixes to select the version, it would be nice to have an automatic selection of the right <code>split</code> version.<br>
+      <code>splits</code>& <code>splitsv</code> have only 1 parameter and can easily be differentiated from <code>splitf</code> & <code>splitc</code>.<br>
+      <code>splits</code>& <code>splitsv</code> will be selected by parametring the return type.</p>
+      <pre>str.split&lt;string>(" ");  ==> Returns vector&lt;string>
+str.split&lt;string_view>(" ");  ==> Returns vector&lt;string_view></pre>
+    <p>It's not very user-friendly, but if we set a default type it can be better.
+      I selected <code>basic_string_view</code> as default type as it's the most interesting in most cases and the longer to type (string_view=11 char).<br>
+    When other type is needed (i.e. string), it can be specified, it can also be another string type if convertible from string_view </p>
+      <pre>template&lt;class StringType=<b>basic_string_view&lt;CharT, Traits></b>,class SeparatorType >
+vector&lt;StringType > split(const SeparatorType &Separator) const
+
+str.split&lt;string>(" ");  ==> Returns vector&lt;string>
+str.split(" ");  ==> Returns vector&lt;string_view></pre>
+    <p> To make the difference between <code>splitf</code> & <code>splitc</code> version, <code>enable_if</code> & <code>is_callable</code> may probably be used.
+      I was unable to implement it (I left splitc as is).<br>
+      Example of implementation in <a href="#Ref6">[6]</a>
+    </p>
+
+
+
     <H4>Special values</H4>
-    <p>If the separator is an empty string "" or the separator char is 0 then split methods will split on every char.<br>
+    <p>If the separator is an empty string "" or the separator char is 0 then split methods will split on every char.<code>"abc"=>["a","b","c"]</code><br>
     If the input string is an empty string "" then split methods will return an empty container or never call the callback function.
     </p>
 
@@ -107,8 +137,9 @@ strsv.splitc(" ", vector6);     </pre>
 
     <H4>split by single char</H4>
     <p>It was highlighted that split by a single char can be optimized regarding splitting by a string. Then it was suggested an overload for single char Separator.<br>
-    On the other hand this optimization can (and should) be detected at runtime or by a non-standardized overload added by the implentor.<br>
-    for information the <code>string::find</code> method as standardized the char overload too.</p>
+    A	counter-argument was this optimization can (and should) be detected at runtime or by a non-standardized overload added by the implentor.
+    But why spend time to check if it can be determined at compilation.<br>
+    For information the <code>string::find</code> method as standardized the char overload too.</p>
     <p>
       It was decided to add the char overload as it also avoid the creation of the temporary string_view object.<br>
       The implementors can decide to forward it to the string_view version if it don't want to optimize this case.<br>
@@ -142,7 +173,44 @@ strsv.splitc(" ", vector6);     </pre>
 
 
 
-    <H4>Alternate option : string_split function</H4>
+<H4 class="modified">Alternate option : split as non-member function : string_split</H4>
+    <p>
+        <code>string_split</code> function algorithm may replace member function as it doesn't require special access to the class.<br>
+      Pros are :<br>
+      * avoid implementing it in both classes.<br>
+      It's true methods have to be declared on both classes, however, in <code>basic_string</code> it can be a generic forwarder (below examples used for unified split).
+      <pre>	// SPLIT Version replacing splits & splitsv for any separator
+	template<class StringType = basic_string_view&lt;CharT, Traits>, class SeparatorType >
+	vector&lt;StringType > split(const SeparatorType &Separator) const
+	{
+		basic_string_view17&lt;CharT, Traits> sv(this->c_str(),this->size());
+		return sv.split&lt;StringType>(Separator);
+	}
+
+	// SPLIT Version replacing splitf & splitc for any separator
+	template&lt;class SeparatorType , class TargetType>
+	void split(const SeparatorType &Separator, TargetType Target) const
+	{
+		basic_string_view17&lt;CharT, Traits> sv(this->c_str(), this->size());
+		return sv.split(Separator, Target);
+	}
+</pre>
+    * It can be used with alternate string class, however, it will probably require they have a standardized way to extract substring by having a substr method
+        (it's not the case of qstring, Cstring, AnsiString ) making this argument less valuable<br>
+Cons :<br>
+* why 'find*','substr','copy' can be a member and 'split' should not? It looks to me more homogeneous. <br>
+* I consider using member function is more Object Oriented Programming.<br>
+<pre>mystring.split(',')  //seems me more OOP
+string_split(mystring,',')  //seems me more C/Procedural </pre>
+* Introduction of a 'global_name' <code>string_split</code> which can enter in a collision with a user function.
+    It's supposed to be protected by namespace but usage of <code>using namespace std;</code> is quite common.
+
+    </p>
+
+
+
+
+    <H4>Alternate option : string_split function returning a range</H4>
     <p>
         <code>string_split</code> function algorithm will return a range and can potentially replace all the previously discussed method<br>
         Example of usage<pre>
@@ -152,16 +220,14 @@ vector&lt;string>  MyResult(split(MyStr, ","));
 vector&lt;string_view> MyResult(split(string_view(MyStr), ","));
 // splitf replacement
 std::for_each(split(string_view(MyStr), ","), callback);    </pre>
-It could also be used with alternate string class, however it will probably require they have a standardized way to extract substring by having a substr method 
-        (it's not case of qstring, Cstring, AnsiString ) making this argument less valuable<br>
 Example of implementation in <a href="#Ref3">[3]&[4]</a><br>
 It looks at a smart option, however, some cons on it :<br>
 * Temporary object issues (see below)<br>
-* Some notation may be heavier than with methods options<br>
-* Create a global name function which could have a collision with existing code.
+* Some notation may be heavier than with methods options
+
     </p>
     <p><a name="TempObject"><span style="text-decoration: underline;">The Temporary object issue</span></a><br>
-        During the evaluation of prototype it was clearly appears there's a problem with temporary objects.<br>
+        During the evaluation of the prototype it was clearly appears there's a problem with temporary objects.<br>
 <pre>string string_toLower(string Str)
 {
     std::transform(Str.begin(), Str.end(), Str.begin(), ::tolower);
@@ -174,12 +240,12 @@ int main()
   for(auto x : split_string(string_toLower("C++ Is Very Fun!!!")," "))    <== (2)
     . . . . .
 }    </pre>
-Code (1) will not work because <code>split_string</code> use a reference to the <code>regex</code> but has this one doesn't exist anymore when
+Code (1) will <b>not</b> work because <code>split_string</code> use a reference to the <code>regex</code> but has this one doesn't exist anymore when
     <code>split_string</code> returns, the returned iterator got a problem because the regex object doesn't exist anymore.<br>
     It can easily be fixed by copying the regex in the iterator, but it's not cost free. Problem is potentially the same with the string separator but has it should be a literal it should be OK in most times.
     </p>
-    <p> Code (2) will not work either and it's a bigger problem. It's for the same reason, when we use the returned iterator, the lowered string doesn't exist anymore.
-      But systematically make a copy of the inputString doesn't make sense from a memory and a performance perspective.
+    <p> Code (2) will <b>not</b> work either and it's a bigger problem. It's for the same reason, when we use the returned iterator, the lowered string doesn't exist anymore.
+      A workaround could be to systematically make a copy of the inputString but it doesn't make sense from a memory and a performance perspective.
       It will also invalidate returned string_view in several other usage as the returned string view will not be on the initial object but on the saved copy.
     </p><p>
       A complementary test done using split action of range-v3 library seems to confirm this fact :
@@ -190,14 +256,15 @@ Code (1) will not work because <code>split_string</code> use a reference to the 
 
     </p><p>
     <span style="text-decoration: underline;">Solutions Comparison</span><br>
-      Since the first answer in the proposal thread on google groups, there's a debate between methods vs function. Bellow a factual comparison on some use case.
+      Since the first answer in the proposal thread on google groups, there's a debate between methods vs function. Bellow a factual comparison on some use case.<br>
+      Note : Other options like unified name split or non member function can be consider but they are pretty close of method option.
 <style>
 #table1 td:nth-child(2),#table1 td:nth-child(3) {font-family: Menlo, Monaco, Consolas, "Courier New", monospace;font-size: small;min-width: 300px;}
 </style>
     <table border="1" id="table1">
       <tr>
         <th>Usage</th>
-        <th>Function Option</th>
+        <th>Range function Option</th>
         <th>Method Option</th>
         <th>Remarks</th>
       </tr>
@@ -246,22 +313,42 @@ Code (1) will not work because <code>split_string</code> use a reference to the 
       <tr>
         <td>Temporary object</td>
         <td>vec=string_split(GetTmpObject(),",");</td>
-        <td>vec=GetTmpObject().split(",");</td>
+        <td>vec=GetTmpObject().splits(",");</td>
         <td>
           Function solution : Doesn't work (see § Temporary object issue)<br>
           Methods solution : works fine
         </td>
       </tr>
       <tr>
-        <td>From alternate string class (Must be convertible with string_view)</td>
+        <td>From alternate string class (Must be convertible from string_view)</td>
         <td>vec=string_split(MyOtherString,",");</td>
-        <td>vec=string_view(MyOtherString).split(",");</td>
+        <td>vec=string_view(MyOtherString).splitsv(",");</td>
         <td>
           both options use in fact the string_view implementation. string_split is not instanciated for the alternate string class.
         </td>
       </tr>
     </table>
     </p>
+
+
+
+    <H4 class="modified">comparison with range::split</H4>
+    <p>C++ 17 will bring a new feature named range that will allow simplify operations on several stuff, thanks to Eric Niebler for his strong commitment on that.<br>
+      Range-V3 (ancestor of the proposal) include a split action allowing split containers by an element, a range or a predicate.<br>
+      This solution would fit the need but with some restriction I think.
+      Ranges are designed to handle general containers with general purpose content, at the opposite this proposal is string oriented and integrate easy to use features.<br>
+      Split by a single char with range is easy to do and can be a reasonable alternative : <code>vector&lt;string>vect1= str8 | view::split(',');</code><br>
+      Use range to split by a substring or a regex will be significantly more complex and require significant pieces of technical code.<br>
+      Take advantage of string_view is possible with range but it requires an explicit cast of the input string then I consider it should be the default case.<br>
+      As described in previous § (range function) range usage cause creation of several intermediate objects (the range, iterators),
+      if we consider the case of parsing a 100 000 line CSV file of 10 columns where each line is handled using the random access operator on the application.
+      I've the feeling that using the <code>splitc</code> variant on a vector will be simpler to write and cause significantly less allocation of internal objects.
+
+
+
+    </p>
+
+
     <H3>Discussion on join</H3>
 
 
@@ -480,7 +567,7 @@ static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Sepa
     <a href="https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko">https://groups.google.com/a/isocpp.org/forum/?utm_medium=email&utm_source=footer#!topic/std-proposals/JTKTThJ-7Ko</a>                    
                 </li>
     <li><a name="Ref2">
-      [2] Example of implementation on GitHub with  VC17 (testes also with GCC 6.2 MingW, some minor change required)</a>
+      [2] Example of implementation on GitHub with  VC17 (testes also with GCC 6.2 MingW)</a>
       <br>Test : <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/testongcc.cpp</a>
       <br>Lib : <a href="https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/string17.h">https://github.com/laurent-n/cpp17_implode_explode/blob/master/testcpp17_1/string17.h</a>
     </li>
@@ -499,6 +586,10 @@ static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Sepa
     <li><a name="Ref5">
       [5] N3593 Proposal</a>
       <br><a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html">http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3593.html</a>
+    </li>
+    <li><a name="Ref6">
+      [6] Example of implementation of unified split version on GitHub with  VC17 (testes also with GCC 6.2 MingW)</a>
+      <br><a href="https://github.com/laurent-n/cpp17_implode_explode/tree/master/testcpp17_4">https://github.com/laurent-n/cpp17_implode_explode/tree/master/testcpp17_4</a>
     </li>
 
   </ul>
