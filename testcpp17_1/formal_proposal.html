@@ -315,7 +315,7 @@ Code (1) will <b>not</b> work because <code>split_string</code> use a reference 
         <td>vec=string_split(GetTmpObject(),",");</td>
         <td>vec=GetTmpObject().splits(",");</td>
         <td>
-          Function solution : Doesn't work (see § Temporary object issue)<br>
+          Function solution : Doesn't work (see Temporary object issue paragraph)<br>
           Methods solution : works fine
         </td>
       </tr>
@@ -340,7 +340,7 @@ Code (1) will <b>not</b> work because <code>split_string</code> use a reference 
       Split by a single char with range is easy to do and can be a reasonable alternative : <code>vector&lt;string>vect1= str8 | view::split(',');</code><br>
       Use range to split by a substring or a regex will be significantly more complex and require significant pieces of technical code.<br>
       Take advantage of string_view is possible with range but it requires an explicit cast of the input string then I consider it should be the default case.<br>
-      As described in previous § (range function) range usage cause creation of several intermediate objects (the range, iterators),
+      As described in previous paragraph (range function) range usage cause creation of several intermediate objects (the range, iterators),
       if we consider the case of parsing a 100 000 line CSV file of 10 columns where each line is handled using the random access operator on the application.
       I've the feeling that using the <code>splitc</code> variant on a vector will be simpler to write and cause significantly less allocation of internal objects.
 
