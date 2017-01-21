@@ -245,7 +245,33 @@ public:
 		return Result;
 	}
 
+	// Convert a string
+	basic_string<CharT, Traits>  tolower()
+	{
+		basic_string<CharT, Traits> res(*this); // Allow to reserve the space		
+		std::transform(begin(), end(), res.begin(), ::tolower);
+		return res;
+	}
+
 
 };
 typedef basic_string_view17<char, std::char_traits<char> > string_view17;
 
+
+// Split by string as non-member function
+// Unable to make this option works with char*
+/*template <
+	class CharT,
+	class Traits = std::char_traits<CharT>,
+	class StringType = basic_string_view<CharT, Traits> >
+vector<StringType > string_split(const basic_string_view17<CharT, Traits> &InputStr, const basic_string_view<CharT, Traits> &Separator) 
+{
+	return InputStr.split(Separator);
+}
+*/
+// Can works with char*
+template <class StringType = string_view >
+vector<StringType > string_split(const string_view17 &InputStr, const std::string_view &Separator)
+{
+	return InputStr.split(Separator);
+}

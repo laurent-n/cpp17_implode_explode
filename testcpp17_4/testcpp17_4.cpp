@@ -111,6 +111,15 @@ void VerbosingTest()
 	}); // string_view => functor
 
 
+	char *MyCharStr="My char* to split";
+	vector4 = string_view17(MyCharStr).split(" "); // string => vector<string_view>
+	for (auto s : vector4)
+		cout << s << endl;
+	vector4 = string_split(MyCharStr, " "); // May works
+//	vector4 = string_split(string_view17(MyCharStr), string_view(" "));
+	for (auto s : vector4)
+		cout << s << endl;
+	cout << strsv.tolower() << endl;
 }
 
 // TESTS from N3593 prototype
