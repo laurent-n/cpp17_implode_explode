@@ -260,7 +260,7 @@ public:
 
 	void toupper_inplace()
 	{
-		std::transform(begin(), end(), begin(), ::tolower);
+		std::transform(begin(), end(), begin(), ::toupper);
 	}
 
 
