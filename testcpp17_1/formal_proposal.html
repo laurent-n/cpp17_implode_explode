@@ -206,7 +206,7 @@ str.split(" ");  ==> Returns vector&lt;string_view></pre>
      vector4 = string_split(MyCharStr," ");</code><br>
     instead of <br>
     <code>vector4 = string_view(MyCharStr).split(" ");</code><br>
-    However during my tests I wasn't able to make <code>char*</code> works with this definition (CharT deduction impossible)<br>
+    However during my tests <a href="#Ref6">[6]</a> I wasn't able to make <code>char*</code> works with this definition (CharT deduction impossible)<br>
     <code>template &lt;class CharT,class Traits = std::char_traits&lt;CharT>,<br>
 	class StringType = basic_string_view&lt;CharT, Traits> ><br>
 vector&lt;StringType > string_split(const basic_string_view17&lt;CharT, Traits> &InputStr, const basic_string_view&lt;CharT, Traits> &Separator)</code><br>
