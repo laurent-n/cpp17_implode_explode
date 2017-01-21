@@ -37,13 +37,18 @@ void VerbosingTest()
 
 
 	string_view17 strsv("C++17 is fun with string_view");
+	wstring_view17 wstrsv(L"C++17 is fun with Wstring_view");
 	cout << strsv << endl;
+	wcout << wstrsv << endl;
 	vector<string> vector2 = strsv.split<string>(" "); // string_view => vector<string>
 	for (auto s : vector2)
 		cout << s << endl;
 	vector2 = strsv.split<string>(' '); // string_view => vector<string> with char separator
 	for (auto s : vector2)
 		cout << s << endl;
+	vector<wstring> wvector2 = wstrsv.split<wstring>(L" "); // Wstring_view => vector<Wstring>
+	for (auto s : wvector2)
+		wcout << s << endl;
 
 	cout << "---- test splitsv -----" << endl;
 	vector<string_view> vector3 = strsv.split(" "); // string_view => vector<string_view>
@@ -120,6 +125,10 @@ void VerbosingTest()
 	for (auto s : vector4)
 		cout << s << endl;
 	cout << strsv.tolower() << endl;
+	wcout << wstrsv.tolower() << endl;
+	str.toupper_inplace();
+	cout << str << endl;
+	
 }
 
 // TESTS from N3593 prototype

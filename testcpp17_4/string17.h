@@ -83,6 +83,10 @@ public:
 		return result_string;
 	}
 
+	void toupper_inplace()
+	{
+		std::transform(begin(), end(), begin(), ::toupper);
+	}
 
 };
 typedef basic_string17<char> string17;
@@ -246,17 +250,23 @@ public:
 	}
 
 	// Convert a string
-	basic_string<CharT, Traits>  tolower()
+	basic_string<CharT, Traits> tolower() const
 	{
-		basic_string<CharT, Traits> res(*this); // Allow to reserve the space		
-		std::transform(begin(), end(), res.begin(), ::tolower);
+		basic_string<CharT, Traits> res; 
+		res.reserve(size()); // Allows reserve the space		
+		std::transform(begin(), end(), std::back_inserter(res), ::tolower);
 		return res;
+	}
+
+	void toupper_inplace()
+	{
+		std::transform(begin(), end(), begin(), ::tolower);
 	}
 
 
 };
 typedef basic_string_view17<char, std::char_traits<char> > string_view17;
-
+typedef basic_string_view17<wchar_t, std::char_traits<wchar_t> >  wstring_view17;
 
 // Split by string as non-member function
 // Unable to make this option works with char*

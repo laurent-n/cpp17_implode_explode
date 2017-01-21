@@ -33,8 +33,9 @@ Date: 2017-01-21
       join(["C++","is","fun"],"/") => "C++/is/fun"      </pre>
 
     <p>The purpose of this simple proposal is to cover this miss.</p>
+    <p>We also propose solutions to easily handle case conversion</p>
     <p>
-        This feature is available in the standard string class of the following languages : D, Python, Java, C#, Go, Rust.
+        Theses features are available in the standard string class of the following languages : D, Python, Java, C#, Go, Rust.
     </p>
 
     <H2>II. Impact On the Standard</H2>
@@ -204,13 +205,13 @@ str.split(" ");  ==> Returns vector&lt;string_view></pre>
     <span class="modified"> * It may be simpler to use with char*</span><br>
    <code> const char *MyCharStr="My char* to split";<br>
      vector4 = string_split(MyCharStr," ");</code><br>
-    instead of <br>
+    could be written instead of <br>
     <code>vector4 = string_view(MyCharStr).split(" ");</code><br>
     However during my tests <a href="#Ref6">[6]</a> I wasn't able to make <code>char*</code> works with this definition (CharT deduction impossible)<br>
-    <code>template &lt;class CharT,class Traits = std::char_traits&lt;CharT>,<br>
-	class StringType = basic_string_view&lt;CharT, Traits> ><br>
-vector&lt;StringType > string_split(const basic_string_view17&lt;CharT, Traits> &InputStr, const basic_string_view&lt;CharT, Traits> &Separator)</code><br>
-    But was possible if I skip the CharT with this definition instead (but it will require do define for each possible CharT) <br>
+    <pre>template &lt;class CharT,class Traits = std::char_traits&lt;CharT>,
+	  class StringType = basic_string_view&lt;CharT, Traits> >
+vector&lt;StringType > string_split(const basic_string_view17&lt;CharT, Traits> &InputStr, const basic_string_view&lt;CharT, Traits> &Separator)</pre>
+    But was possible if I skip the CharT with this definition instead (but it will require to definea function for each possible CharT that is opposed to the 1st Pros argument) <br>
     <code>template &lt;class StringType = string_view ><br>
 vector&lt;StringType > string_split(const string_view17 &InputStr, const string_view &Separator)
 </code><br>
@@ -365,8 +366,6 @@ Code (1) will <b>not</b> work because <code>split_string</code> use a reference 
 
 
     <H3>3.2 Discussion on join</H3>
-
-
     <H4>3.2.1 join static method</H4>
     <p><code>join</code> static method will join a list of input string transmitted on a iterable container and add a delimiter between each value</p>
     <pre>template&lt;class T,class U>
@@ -441,32 +440,81 @@ In some others, it's separator last Go, Rust, boost::algorithm::join, LibC strto
 
 
 
+    <H3 class="modified">3.3 Discussion on case management function</H3>
+    <p>This chapter wasn't in the initial perimeter of the proposal, but as in fact this proposal talk about solutions
+    to help to handle std::string, I have decided to add it in order to avoid managing a separate proposal.</p>
+
+    <H4>3.3.1 tolower/toupper for string</H4>
+    <p>Today STL provide solutions to convert in lowercase/uppercase a single char, but applying it to a string is quite non-intuitive
+      when we can hope a modern language should handle that easily.</p>
+     <pre>std::string result;
+std::transform( src.begin(), src.end(), std::back_inserter( result ), ::tolower );</pre>
+<p>When it could be <code>std::string result=src.tolower();</code>
+  The proposal is to add  <code>tolower</code> and <code>toupper</code> member method <code>basic_string</code> and <code>basic_string_view</code> classes has shorthand for string of existing <code>tolower</code> and <code>toupper</code> function of <code>cctype</code> header which return a converted copy.
+     </p>
+    <p>As discussed for split & join it could also be non-members functions <code>string_toupper</code> there are quite the same Pros & Cons<br>Possible implementation</p>
+    <pre>basic_string&lt;CharT, Traits> tolower() const
+{
+  basic_string&lt;CharT, Traits> result;
+  result.reserve(size()); // Allows reserve the space
+  std::transform(begin(), end(), std::back_inserter(result), ::tolower);
+  return result;
+}</pre>
+
+
+    <H4>3.3.2 In place tolower/toupper for string</H4>
+    <p>The previous &sect; propose methods returning transformed copy of the input string. But in some case we don't need to keep the original then it makes sense to reuse the memory instead of allocating a new one. Then we propose to have an in place version of methods suffixed by <code>_inplace</code> (we found a similar approach in POCO library)(perhaps an native English speaker may suggest a more adequate suffix(emplace like emplace_back?) ).
+    </p>
+<pre>void toupper_inplace();</pre>
+      Example of implementation in <a href="#Ref6">[6]</a>
+
+    <H4>3.3.3 Locale version of tolower/toupper </H4>
+    <p>Perhaps it could make sense to have version parametrized by a locale which uses <code>toupper</code> for locale header.<br>
+      Perhaps this version could handle 1:n conversion like '&szlig;'=>'SS' which is currently not handled by the existing single char <code>toupper</code>.<br>
+      Perhaps it makes sense to have it as non-members functions part of <code>locale</code> header.
+    </p>
+
+    <H4>3.3.4 case insensitive compare </H4>
+    <p>It may append to wish to compare 2 strings in a case insensitive manner, but it's not easy to do it in an efficient manner.<br>
+      A naive solution consists to convert both string in lowercase on to call <code>compare</code> on the result. However this option may cause 2 extra memory allocation, when perhaps it can be detected immediately that on first char 'a'!='b'<br>
+      We propose to add a <code>icompare</code> method similar to the existing <code>compare</code> but not case sensitive in both <code>basic_string</code> and <code>basic_string_view</code> classes.<br>
+      <code>int icompare( const basic_string& str ) const;</code>
+    </p>
+
+
+
 
     <H2>IV. Proposed Text</H2>
     <H4>Addition to &lt;string_view> header</H4>
     <H5>add in class basic_string_view</H5>
-<pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
-vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
-vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
+<pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const;
+vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const;
+vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const;
 
-vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
-vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
-vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const
+vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const;
+vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const;
+vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const;
 
 template &lt;class F>
-void splitf(const basic_string_view &Separator,F functor) const
+void splitf(const basic_string_view &Separator,F functor) const;
 template &lt;class F>
-void splitf(const typename basic_string_view::value_type Separator,F functor) const
+void splitf(const typename basic_string_view::value_type Separator,F functor) const;
 template &lt;class F>
-void splitf(const basic_regex&lt;CharT> &Separator,F functor) const
+void splitf(const basic_regex&lt;CharT> &Separator,F functor) const;
 
 template &lt;class T>
-void splitc(const basic_string_view &Separator,T &Result) const
+void splitc(const basic_string_view &Separator,T &Result) const;
 template &lt;class T>
-void splitc(const typename basic_string_view::value_type Separator,T &Result) const
+void splitc(const typename basic_string_view::value_type Separator,T &Result) const;
 template &lt;class T>
-void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const
-</pre>
+void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const;
+
+basic_string&lt;CharT, Traits> toupper() const;
+void toupper_inplace() ;
+basic_string&lt;CharT, Traits> tolower() const;
+void tolower_inplace();
+int icompare( const basic_string_view& str ) const;</pre>
+
 
 <h5>splits method and overloads</h5>
 <pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
@@ -536,32 +584,60 @@ void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const  </pre>
       If the input string is an empty string "" then split methods return an empty container or never call the callback function.
     </p>
 
+<h5 class="modified">case management method </h5>
+<pre>basic_string&lt;CharT, Traits> toupper() const;
+basic_string&lt;CharT, Traits> tolower() const;</pre>
+    <p>
+      <b>Effects: </b>Return a copy of a string transformed in lowercase/uppercase.<br>
+      <b>Returns:</b> the transformed copy <br>
+    </p>
+<pre>void toupper_inplace();
+void tolower_inplace();</pre>
+    <p>
+      <b>Effects: </b>Transform the string in is lowercase/uppercase version.<br>
+      <b>Returns:</b> void <br>
+      <b>Remarks:</b> it replace the original string
+    </p>
+<pre>int icompare( const basic_string_view& str ) const;</pre>
+    <p>
+      <b>Effects: </b>Make a comparison of string in a similar manner that compare but case insensitive<br>
+      <b>Returns:</b> negative value if *this appears before the character sequence specified by the arguments, in lexicographical order<br>
+zero if both character sequences compare equivalent<br>
+positive value if *this appears after the character sequence specified by the arguments, in lexicographical order
+    </p>
+
     <H4>Addition to &lt;string> header</H4>
     <H5>add in class basic_string</H5>
-<pre>vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_string_view &Separator) const
-vector&lt;basic_string&lt;CharT, Traits> > splits(const typename basic_string_view::value_type Separator) const
-vector&lt;basic_string&lt;CharT, Traits> > splits(const basic_regex&lt;CharT> &Separator) const
-vector&lt;basic_string_view> splitsv(const basic_string_view &Separator) const
-vector&lt;basic_string_view> splitsv(const typename basic_string_view::value_type Separator) const
-vector&lt;basic_string_view> splitsv(const basic_regex&lt;CharT> &Separator) const
+<pre>vector&lt;basic_string> splits(const basic_string_view&lt;CharT, Traits> &Separator) const;
+vector&lt;basic_string> splits(const typename basic_string_view&lt;CharT, Traits>::value_type Separator) const;
+vector&lt;basic_string> splits(const basic_regex&lt;CharT> &Separator) const;
+vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const basic_string_view&lt;CharT, Traits> &Separator) const;
+vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const typename basic_string_view&lt;CharT, Traits>::value_type Separator) const;
+vector&lt;basic_string_view&lt;CharT, Traits> > splitsv(const basic_regex&lt;CharT> &Separator) const;
 template &lt;class F>
-void splitf(const basic_string_view &Separator,F functor) const
+void splitf(const basic_string_view&lt;CharT, Traits> &Separator,F functor) const;
 template &lt;class F>
-void splitf(const typename basic_string_view::value_type Separator,F functor) const
+void splitf(const typename basic_string_view&lt;CharT, Traits>::value_type Separator,F functor) const;
 template &lt;class F>
-void splitf(const basic_regex&lt;CharT> &Separator,F functor) const
+void splitf(const basic_regex&lt;CharT> &Separator,F functor) const;
 template &lt;class T>
-void splitc(const basic_string_view &Separator,T &Result) const
+void splitc(const basic_string_view&lt;CharT, Traits> &Separator,T &Result) const;
 template &lt;class T>
-void splitc(const typename basic_string_view::value_type Separator,T &Result) const
+void splitc(const typename basic_string_view&lt;CharT, Traits>::value_type Separator,T &Result) const;
 template &lt;class T>
-void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const
+void splitc(const basic_regex&lt;CharT> &Separator,T &Result) const;
 
 template&lt;class T,class U>
-static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator)</pre>
-<h5>splits,splitsv,splitf,splitc methods and overloads</h5>
+static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Separator);
+
+basic_string toupper() const;
+void toupper_inplace() ;
+basic_string tolower() const;
+void tolower_inplace();
+int icompare( const basic_string& str ) const;</pre>
+<h5>splits,splitsv,splitf,splitc,tolower,toupper,icompare methods and overloads</h5>
     <p>
-      Exactly the same behavior as their basic_string_view equivalent it's a shortcut.
+      Exactly the same behavior as their <code>basic_string_view</code> equivalent it's a shortcut.
     </p>
 <h5>join static method</h5>
 <pre>template&lt;class T,class U>
