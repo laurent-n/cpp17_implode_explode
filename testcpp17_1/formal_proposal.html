@@ -126,6 +126,13 @@ vector&lt;StringType > split(const SeparatorType &Separator) const
 
 str.split&lt;string>(" ");  ==> Returns vector&lt;string>
 str.split(" ");  ==> Returns vector&lt;string_view></pre>
+    <p class="modified">An alternate solution was proposed by Jakob Riedle with a specialization based on the fact invoker is a lvalue or a rvalue.<br>
+      This solution has the advantage it automatically discards the usage of <code>string_view</code> on temporary values,
+      but it makes it a bit more complex if you really want split as a copy in a <code>vector&lt;string></code>, it can, however, be done using <code>splitc(MyStringVector)</code>. I've tested it successfully with this prototype on GCC&VS2017</p>
+    <pre>template&lt;class SeparatorType >
+vector&lt;basic_string_view<CharT, Traits> > split(const SeparatorType &Separator)  const &;
+template&lt;class SeparatorType >
+vector&lt;basic_string<CharT, Traits> > split(const SeparatorType &Separator)  const &&;</pre>
     <p> To make the difference between <code>splitf</code> & <code>splitc</code> version, <code>enable_if</code> & <code>is_callable</code> may probably be used.
       I was unable to implement it (I left splitc as is).<br>
       Example of implementation in <a href="#Ref6">[6]</a>
@@ -684,5 +691,10 @@ static basic_string&lt;CharT, Traits, Allocator> join(T &InputStringList, U Sepa
     </li>
 
   </ul>
+
+    <H2>VII Acknowledgements</H2>
+Thanks to Nicol Bolas, Thiago Macieira,Ville Voutilainen ,Olaf van der Spek, Matthew Woehlke, Alexander Bolz, Marco Arena, Jakob Riedle
+    for assistance on this paper.
+
 </BODY>
 </HTML>

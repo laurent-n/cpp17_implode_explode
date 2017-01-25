@@ -52,6 +52,23 @@ public:
 		basic_string_view17<CharT, Traits> sv(this->c_str(), this->size());
 		return sv.split(Separator, Target);
 	}
+	//******************************************************************************
+	// Version returning a String View as caller is a lvalue
+	template<class SeparatorType >
+	vector<basic_string_view<CharT, Traits> > split2(const SeparatorType &Separator)  const &
+	{
+		basic_string_view17<CharT, Traits> sv(this->c_str(), this->size());
+		return sv.split<basic_string_view<CharT, Traits>>(Separator);
+	}
+
+	//******************************************************************************
+	// Version returning a String  as caller is a rvalue / temporary object
+	template<class SeparatorType >
+	vector<basic_string<CharT, Traits> > split2(const SeparatorType &Separator)  const &&
+	{
+		basic_string_view17<CharT, Traits> sv(this->c_str(), this->size());
+		return sv.split<basic_string<CharT, Traits>>(Separator);
+	}
 
 
 	template<class T, class U>

@@ -128,6 +128,16 @@ void VerbosingTest()
 	wcout << wstrsv.tolower() << endl;
 	str.toupper_inplace();
 	cout << str << endl;
+
+	cout << "---- test split2 -----" << endl;
+	vector2 = string17(string_toLower(str)).split2(' '); // string => vector<string> with char separator
+	for (auto s : vector2)
+		cout << s << endl;
+	vector4 = str.split2(' '); // string => vector<string_view> with char separator
+	for (auto s : vector4)
+		cout << s << endl;
+
+
 	
 }
 
