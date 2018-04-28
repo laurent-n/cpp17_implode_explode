@@ -46,8 +46,8 @@ public:
 	}
 
 	// SPLIT Version replacing splitf & splitc for any separator
-	template<class SeparatorType , class TargetType>
-	void split(const SeparatorType &Separator, TargetType Target) const
+	template<class SeparatorType, class TargetType>
+	void split(const SeparatorType &Separator, TargetType &Target) const
 	{
 		basic_string_view17<CharT, Traits> sv(this->c_str(), this->size());
 		return sv.split(Separator, Target);
@@ -60,7 +60,7 @@ public:
 		basic_string_view17<CharT, Traits> sv(this->c_str(), this->size());
 		return sv.split<basic_string_view<CharT, Traits>>(Separator);
 	}
-
+	
 	//******************************************************************************
 	// Version returning a String  as caller is a rvalue / temporary object
 	template<class SeparatorType >
@@ -69,7 +69,7 @@ public:
 		basic_string_view17<CharT, Traits> sv(this->c_str(), this->size());
 		return sv.split<basic_string<CharT, Traits>>(Separator);
 	}
-
+	
 
 	template<class T, class U>
 	static basic_string<CharT, Traits, Allocator> join(T &InputStringList, U Separator)
@@ -129,6 +129,8 @@ string_join(const T &InputStringList, const basic_string_view<typename T::value_
 	return result_string;
 }
 
+
+
 //**************************************************************************************************************************
 //**************************************************************************************************************************
 //**************************************************************************************************************************
@@ -138,6 +140,23 @@ template<
 >
 class basic_string_view17 :public basic_string_view<CharT, Traits>
 {
+
+	template <typename T>
+	struct HasclearMethod
+	{
+		template <class, class> class checker;
+
+		template <typename C>
+		static std::true_type test(checker<C, decltype(&C::clear)> *);
+
+		template <typename C>
+		static std::false_type test(...);
+
+		typedef decltype(test<T>(nullptr)) type;
+		static const bool value = std::is_same<std::true_type, decltype(test<T>(nullptr))>::value;
+	};
+
+
 public:
 	using basic_string_view<CharT, Traits>::basic_string_view;
 
@@ -145,13 +164,11 @@ public:
 	//******************************************************************************
 	// Split by string
 	template <class F
-		//, typename = std::enable_if<std::is_function<F>::value>
-		//, class Fp, typename = std::enable_if<std::is_callable<F(Fp)>::value>
-		//, class Fp, typename enable_if<is_void<decltype(declval<F>()(Fp))>::value, int>::type V = 0
-		//, class Fp, typename = std::enable_if_t<std::is_callable<F(Fp)>::value>
+		, typename std::enable_if<!HasclearMethod<F>::value>::type* = nullptr
 	>
 		void split(const basic_string_view<CharT, Traits> &Separator, F functor) const
 	{
+
 		if (Separator.size() <= 1) {
 			if (Separator.size() == 0)
 				this->split(0, functor);
@@ -179,7 +196,9 @@ public:
 
 	}
 	// Overload with separator as simple char to allow optimization.
-	template <class F>
+	template <class F
+		, typename std::enable_if<!HasclearMethod<F>::value>::type* = nullptr
+	>
 	void split(const typename basic_string_view<CharT, Traits>::value_type Separator, F functor) const
 	{
 
@@ -210,7 +229,9 @@ public:
 		}
 	}
 	//******************************************************************************
-	template <class F>
+	template <class F
+		, typename std::enable_if<!HasclearMethod<F>::value>::type* = nullptr
+	>
 	void split(const basic_regex<CharT> &Separator, F functor) const
 	{
 		if (this->empty()) return;
@@ -230,30 +251,15 @@ public:
 	}
 	//******************************************************************************
 	// Split on container aka splitc
-	template <class T
-		, typename = std::enable_if<!std::is_function<T>::value>
-		//, class Fp,typename = std::enable_if_t<!std::is_callable<F(Fp)>::value>
+	template <class SeparatorType,class T
+		, typename std::enable_if<HasclearMethod<T>::value>::type* = nullptr
 	>
-	void splitc(const basic_string_view<CharT, Traits> &Separator, T &Result) const
+		void split(const SeparatorType &Separator, T &Result) const
 	{
-		typename basic_string_view<CharT, Traits>::size_type p, start = 0;
 		Result.clear();
-		if (this->empty()) return;
-		while (1)
-		{
-			p = basic_string_view<CharT, Traits>::find(Separator, start);
-			if (p == basic_string_view<CharT, Traits>::npos)
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, basic_string_view<CharT, Traits>::npos));
-				return;
-			}
-			else
-			{
-				Result.emplace_back(basic_string_view<CharT, Traits>::substr(start, p - start));
-				start = p + Separator.length();
-			}
-		}
+		split(Separator, [&](const string_view &s) {Result.emplace_back(s);}); 
 	}
+
 	//******************************************************************************
 	// SPLIT Version for char replacing splits & splitsv for any separator
 	//	template<class StringType=basic_string_view<CharT, Traits> >

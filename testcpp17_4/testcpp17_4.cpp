@@ -71,15 +71,33 @@ void VerbosingTest()
 	{
 		cout << s << "   ,Pos=" << (s.data() - strsv.data()) << " ,Len=" << s.length() << endl;
 	}); // string_view => functor
+	strsv.split(' ', [&](const string_view &s)
+	{
+		cout << s << "   ,Pos=" << (s.data() - strsv.data()) << " ,Len=" << s.length() << endl;
+	}); // string_view => functor
 	cout << "---- test splitc -----" << endl;
 	vector<string_view> vector5;
-	strsv.splitc(" ", vector5); // splitc in vector<string_view>
+//	strsv.splitc(" ", vector5); // splitc in vector<string_view>
+	strsv.split(" ", vector5); // splitc in vector<string_view>
 	for (auto s : vector5)
 		cout << s << endl;
 	vector<string> vector6;
-	strsv.splitc(" ", vector6); // splitc in vector<string>
+	
+	//	strsv.splitc(" ", vector6); // splitc in vector<string>
+	strsv.split(" ", vector6); // splitc in vector<string>
 	for (auto s : vector6)
 		cout << s << endl;
+
+	strsv.split(' ', vector6); // splitc in vector<string>
+	for (auto s : vector6)
+		cout << s << endl;
+
+
+//	strsv.TestFct(vector6); // splitc in vector<string>
+//	strsv.TestFct([]() {return 123; }); // splitc in vector<string>
+	//return;
+
+
 
 	cout << "Join of string vector=" << string17::join(vector6, "_") << endl;
 	cout << "Join of string_view vector=" << string17::join(vector5, "_") << endl;
@@ -136,7 +154,7 @@ void VerbosingTest()
 	vector4 = str.split2(' '); // string => vector<string_view> with char separator
 	for (auto s : vector4)
 		cout << s << endl;
-
+		
 
 	
 }
@@ -271,36 +289,43 @@ static void test_SimpleLiteralTests()
 
 	// From Basic_string
 	{
-		auto vec = Vec_sv(string17("a").split(","));
+		string17 str("a");
+		auto vec = Vec_sv(str.split(","));
 		EXPECT_EQUAL(1u, vec.size());
 		EXPECT_EQUAL("a", vec[0]);
+		
 	}
 	{
-		auto vec = Vec_sv(string17("a,").split(","));
+		string17 str("a,");
+		auto vec = Vec_sv(str.split(","));
 		EXPECT_EQUAL(2u, vec.size());
 		EXPECT_EQUAL("a", vec[0]);
 		EXPECT_EQUAL("", vec[1]);
 	}
 	{
-		auto vec = Vec_sv(string17("a,b").split(regex(",")));
+		string17 str("a,b");
+		auto vec = Vec_sv(str.split(regex(",")));
 		EXPECT_EQUAL(2u, vec.size());
 		EXPECT_EQUAL("a", vec[0]);
 		EXPECT_EQUAL("b", vec[1]);
 	}
 	{
-		auto vec = Vec_sv(string17("a,").split(regex(",")));
+		string17 str("a,");
+		auto vec = Vec_sv(str.split(regex(",")));
 		EXPECT_EQUAL(2u, vec.size());
 		EXPECT_EQUAL("a", vec[0]);
 		EXPECT_EQUAL("", vec[1]);
 	}
 	{
-		auto vec = Vec_sv(string17("a,b").split(","));
+		string17 str("a,b");
+		auto vec = Vec_sv(str.split(","));
 		EXPECT_EQUAL(2u, vec.size());
 		EXPECT_EQUAL("a", vec[0]);
 		EXPECT_EQUAL("b", vec[1]);
 	}
 	{
-		auto vec = Vec_sv(string17("-a-b-c----d").split("-"));
+		string17 str("-a-b-c----d");
+		auto vec = Vec_sv(str.split("-"));
 		EXPECT_EQUAL(8u, vec.size());
 		EXPECT_EQUAL("", vec[0]);
 		EXPECT_EQUAL("a", vec[1]);
@@ -312,7 +337,8 @@ static void test_SimpleLiteralTests()
 		EXPECT_EQUAL("d", vec[7]);
 	}
 	{
-		auto vec = Vec_sv(string17("-a-b-c----d").split("--"));
+		string17 str("-a-b-c----d");
+		auto vec = Vec_sv(str.split("--"));
 
 		EXPECT_EQUAL(3u, vec.size());
 		EXPECT_EQUAL("-a-b-c", vec[0]);
@@ -321,7 +347,8 @@ static void test_SimpleLiteralTests()
 	}
 	{
 		Vec_sv vec;
-		string17("-a-b-c----d").split("--", [&](const auto &sv) {
+		string17 str("-a-b-c----d");
+		str.split("--", [&](const auto &sv) {
 			vec.push_back(sv);
 		});
 
@@ -330,6 +357,60 @@ static void test_SimpleLiteralTests()
 		EXPECT_EQUAL("", vec[1]);
 		EXPECT_EQUAL("d", vec[2]);
 	}
+	// Test "splitc" on string
+	{
+		//string_view17 str("a,b");
+		string17 str("a,b");
+		auto vec = Vec_sv();
+		//str.split(regex(","), vec);
+		str.split(",", vec);
+		EXPECT_EQUAL(2u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+	}
+	{
+		string17 str("a,b");
+		auto vec = Vec_sv();
+		str.split(regex(","), vec);
+		EXPECT_EQUAL(2u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+	}
+	{
+		string17 str("a,b");
+		auto vec = Vec_sv();
+		str.split(',', vec);
+		EXPECT_EQUAL(2u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+	}
+	// Test "splitc" on stringview
+	{
+		string_view17 str("a,b");
+		auto vec = Vec_sv();
+		str.split(",", vec);
+		EXPECT_EQUAL(2u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+	}
+	{
+		string_view17 str("a,b");
+		auto vec = Vec_sv();
+		str.split(regex(","), vec);
+		EXPECT_EQUAL(2u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+	}
+	{
+		string_view17 str("a,b");
+		auto vec = Vec_sv();
+		str.split(',', vec);
+		EXPECT_EQUAL(2u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+	}
+
+
 
 }
 
