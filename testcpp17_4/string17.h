@@ -228,6 +228,43 @@ public:
 			}
 		}
 	}
+
+	//******************************************************************************
+	// Overload with list of separator as simple char to allow split any of char
+	template <class F
+		, typename std::enable_if<!HasclearMethod<F>::value>::type* = nullptr
+	>
+		void split(std::initializer_list<CharT> SeparatorList, F functor) const
+	{
+		if (this->empty()) return;
+		typename basic_string_view<CharT, Traits>::size_type p = 0, start = 0;
+		while (1)
+		{
+			if (p >= this->size())
+			{
+				functor(basic_string_view<CharT, Traits>::substr(start));
+				return;
+			}
+			bool SeparatorFound = false;
+			for(auto Separator : SeparatorList)
+				if ((*this)[p] == Separator){ 
+					SeparatorFound = true;
+					break; // If found a separator don't search others
+				}
+			if(SeparatorFound)
+			{
+				functor(basic_string_view<CharT, Traits>::substr(start, p - start));
+				++p;
+				start = p;
+			}
+			else
+			{
+				++p;
+			}
+		}
+	}
+
+
 	//******************************************************************************
 	template <class F
 		, typename std::enable_if<!HasclearMethod<F>::value>::type* = nullptr
@@ -269,6 +306,14 @@ public:
 	{
 		vector<StringType >  Result;
 		split(Separator, [&](const basic_string_view<CharT, Traits> &s) {Result.emplace_back(s); });
+		return Result;
+	}
+
+	template<class StringType = basic_string_view<CharT, Traits>  >
+	vector<StringType > split(std::initializer_list<CharT> SeparatorList) const
+	{
+		vector<StringType >  Result;
+		split(SeparatorList, [&](const basic_string_view<CharT, Traits> &s) {Result.emplace_back(s); });
 		return Result;
 	}
 

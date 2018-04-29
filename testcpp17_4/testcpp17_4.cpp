@@ -453,6 +453,34 @@ static void test_AnyOfDelimiter()
 		EXPECT_EQUAL("f", vec[5]);
 		EXPECT_EQUAL("", vec[6]);
 	}
+	// With anyofchar feature using functor
+	{
+		//auto vec = Vec_sv(string_view17("a.b-c,. d, e .f-").split({'.',',','-'}));
+		Vec_sv vec ;
+		string_view17("a.b-c,. d, e .f-").split({ '.',',','-' }, [&](auto const &s) {vec.push_back(s); });
+		EXPECT_EQUAL(8u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+		EXPECT_EQUAL("c", vec[2]);
+		EXPECT_EQUAL("", vec[3]);
+		EXPECT_EQUAL(" d", vec[4]);
+		EXPECT_EQUAL(" e ", vec[5]);
+		EXPECT_EQUAL("f", vec[6]);
+		EXPECT_EQUAL("", vec[7]);
+	}
+	// With anyofchar feature using splitc
+	{
+		auto vec = Vec_sv(string_view17("a.b-c,. d, e .f-").split({'.',',','-'}));
+		EXPECT_EQUAL(8u, vec.size());
+		EXPECT_EQUAL("a", vec[0]);
+		EXPECT_EQUAL("b", vec[1]);
+		EXPECT_EQUAL("c", vec[2]);
+		EXPECT_EQUAL("", vec[3]);
+		EXPECT_EQUAL(" d", vec[4]);
+		EXPECT_EQUAL(" e ", vec[5]);
+		EXPECT_EQUAL("f", vec[6]);
+		EXPECT_EQUAL("", vec[7]);
+	}
 
 }
 
